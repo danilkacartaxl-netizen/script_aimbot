@@ -1,157 +1,155 @@
--- ================================
--- SWILL AIMBOT + ESP PANEL v1.0
--- Черно-красный минимализм
--- Работает в большинстве шутеров
--- ================================
+-- ==============================================
+-- DENWEN ULTRA AIMBOT + ESP v2.0
+-- Круг FOV, скелет, стены, компактное меню
+-- ==============================================
 
 local player = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local mouse = player:GetMouse()
 
--- Настройки (можно менять)
+-- Настройки
 local settings = {
     Aimbot = false,
     ESP = false,
-    AimPart = "Head", -- "Head" или "UpperTorso"
-    FOV = 200,        -- Радиус поиска цели
-    Smooth = 0.2,     -- Плавность наводки (0-1)
-    TeamCheck = true  -- Не стрелять в своих
+    AimPart = "Head",
+    FOV = 250,
+    Smooth = 0.25,
+    TeamCheck = true,
+    ESPColor = Color3.fromRGB(255, 0, 0),
+    ShowSkeleton = true,
+    ShowHealth = true,
+    ShowName = true,
+    WallHack = true
 }
 
--- ===== СОЗДАНИЕ МЕНЮ (БЕЗ БИБЛИОТЕК) =====
+-- ===== КОМПАКТНОЕ МЕНЮ =====
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 250)
-mainFrame.Position = UDim2.new(0.1, 0, 0.5, -125)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+mainFrame.Size = UDim2.new(0, 180, 0, 220)
+mainFrame.Position = UDim2.new(0.02, 0, 0.5, -110)
+mainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 1
-mainFrame.BorderColor3 = Color3.fromRGB(200, 0, 0)
+mainFrame.BorderColor3 = Color3.fromRGB(180, 0, 0)
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
--- Заголовок
+-- Заголовок "DENWEN"
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, 0, 0, 25)
 title.BackgroundTransparency = 1
-title.Text = "SWILL v1.0"
+title.Text = "DENWEN"
 title.TextColor3 = Color3.fromRGB(200, 0, 0)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
 title.Parent = mainFrame
 
--- Кнопка Aimbot
-local aimBtn = Instance.new("TextButton")
-aimBtn.Size = UDim2.new(0, 160, 0, 35)
-aimBtn.Position = UDim2.new(0.5, -80, 0, 40)
-aimBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-aimBtn.BorderColor3 = Color3.fromRGB(200, 0, 0)
-aimBtn.Text = "AIMBOT: OFF"
-aimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-aimBtn.TextScaled = true
-aimBtn.Font = Enum.Font.Gotham
-aimBtn.Parent = mainFrame
-
-aimBtn.MouseButton1Click:Connect(function()
-    settings.Aimbot = not settings.Aimbot
-    aimBtn.Text = settings.Aimbot and "AIMBOT: ON" or "AIMBOT: OFF"
-    aimBtn.BackgroundColor3 = settings.Aimbot and Color3.fromRGB(60, 0, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Кнопка ESP
-local espBtn = Instance.new("TextButton")
-espBtn.Size = UDim2.new(0, 160, 0, 35)
-espBtn.Position = UDim2.new(0.5, -80, 0, 85)
-espBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-espBtn.BorderColor3 = Color3.fromRGB(200, 0, 0)
-espBtn.Text = "ESP: OFF"
-espBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-espBtn.TextScaled = true
-espBtn.Font = Enum.Font.Gotham
-espBtn.Parent = mainFrame
-
-espBtn.MouseButton1Click:Connect(function()
-    settings.ESP = not settings.ESP
-    espBtn.Text = settings.ESP and "ESP: ON" or "ESP: OFF"
-    espBtn.BackgroundColor3 = settings.ESP and Color3.fromRGB(60, 0, 0) or Color3.fromRGB(30, 30, 30)
-end)
-
--- Кнопка "Голова/Корпус"
-local partBtn = Instance.new("TextButton")
-partBtn.Size = UDim2.new(0, 160, 0, 35)
-partBtn.Position = UDim2.new(0.5, -80, 0, 130)
-partBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-partBtn.BorderColor3 = Color3.fromRGB(200, 0, 0)
-partBtn.Text = "ЦЕЛЬ: ГОЛОВА"
-partBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-partBtn.TextScaled = true
-partBtn.Font = Enum.Font.Gotham
-partBtn.Parent = mainFrame
-
-partBtn.MouseButton1Click:Connect(function()
-    if settings.AimPart == "Head" then
-        settings.AimPart = "UpperTorso"
-        partBtn.Text = "ЦЕЛЬ: КОРПУС"
-    else
-        settings.AimPart = "Head"
-        partBtn.Text = "ЦЕЛЬ: ГОЛОВА"
-    end
-end)
-
--- Кнопка FOV
-local fovBtn = Instance.new("TextButton")
-fovBtn.Size = UDim2.new(0, 160, 0, 35)
-fovBtn.Position = UDim2.new(0.5, -80, 0, 175)
-fovBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-fovBtn.BorderColor3 = Color3.fromRGB(200, 0, 0)
-fovBtn.Text = "FOV: 200"
-fovBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-fovBtn.TextScaled = true
-fovBtn.Font = Enum.Font.Gotham
-fovBtn.Parent = mainFrame
-
-local fovValues = {100, 150, 200, 300, 500}
-local fovIndex = 3
-fovBtn.MouseButton1Click:Connect(function()
-    fovIndex = fovIndex % #fovValues + 1
-    settings.FOV = fovValues[fovIndex]
-    fovBtn.Text = "FOV: " .. settings.FOV
-end)
-
--- Кнопка закрытия
+-- Кнопка закрытия (крестик)
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0, 2)
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -25, 0, 2)
 closeBtn.BackgroundTransparency = 1
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.fromRGB(200, 0, 0)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(180, 0, 0)
 closeBtn.TextScaled = true
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = mainFrame
-
 closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- ===== AIMBOT ЛОГИКА =====
+-- Функция создания кнопок
+local function createButton(text, yPos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 140, 0, 28)
+    btn.Position = UDim2.new(0.5, -70, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    btn.BorderColor3 = Color3.fromRGB(150, 0, 0)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.Gotham
+    btn.Parent = mainFrame
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- Кнопки
+local aimBtn = createButton("AIMBOT: OFF", 35, function()
+    settings.Aimbot = not settings.Aimbot
+    aimBtn.Text = settings.Aimbot and "AIMBOT: ON" or "AIMBOT: OFF"
+    aimBtn.BackgroundColor3 = settings.Aimbot and Color3.fromRGB(60, 0, 0) or Color3.fromRGB(25, 25, 25)
+end)
+
+local espBtn = createButton("ESP: OFF", 70, function()
+    settings.ESP = not settings.ESP
+    espBtn.Text = settings.ESP and "ESP: ON" or "ESP: OFF"
+    espBtn.BackgroundColor3 = settings.ESP and Color3.fromRGB(60, 0, 0) or Color3.fromRGB(25, 25, 25)
+end)
+
+-- Выбор цвета (циклично)
+local colors = {
+    {Color3.fromRGB(255, 0, 0), "КРАСНЫЙ"},
+    {Color3.fromRGB(0, 255, 0), "ЗЕЛЁНЫЙ"},
+    {Color3.fromRGB(0, 150, 255), "СИНИЙ"},
+    {Color3.fromRGB(255, 255, 0), "ЖЁЛТЫЙ"},
+    {Color3.fromRGB(255, 0, 255), "ФИОЛЕТ"}
+}
+local colorIndex = 1
+local colorBtn = createButton("ЦВЕТ: КРАСНЫЙ", 105, function()
+    colorIndex = colorIndex % #colors + 1
+    settings.ESPColor = colors[colorIndex][1]
+    colorBtn.Text = "ЦВЕТ: " .. colors[colorIndex][2]
+end)
+
+local fovBtn = createButton("FOV: 250", 140, function()
+    local fovs = {150, 250, 350, 500}
+    local current = tonumber(fovBtn.Text:match("%d+"))
+    for i, v in ipairs(fovs) do
+        if v == current then
+            local nextIndex = i % #fovs + 1
+            settings.FOV = fovs[nextIndex]
+            fovBtn.Text = "FOV: " .. fovs[nextIndex]
+            break
+        end
+    end
+end)
+
+local skelBtn = createButton("СКЕЛЕТ: ВКЛ", 175, function()
+    settings.ShowSkeleton = not settings.ShowSkeleton
+    skelBtn.Text = settings.ShowSkeleton and "СКЕЛЕТ: ВКЛ" or "СКЕЛЕТ: ВЫКЛ"
+end)
+
+-- ===== КРУГ FOV =====
+local fovCircle = Instance.new("CircleHandleAdornment")
+fovCircle.Radius = settings.FOV / 3
+fovCircle.Color3 = Color3.fromRGB(200, 0, 0)
+fovCircle.Transparency = 0.7
+fovCircle.AlwaysOnTop = true
+fovCircle.ZIndex = 0
+fovCircle.Parent = camera
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    fovCircle.Radius = settings.FOV / 3
+    fovCircle.CFrame = camera.CFrame
+end)
+
+-- ===== AIMBOT =====
 local function getClosestPlayer()
-    local closest = nil
-    local shortestDist = settings.FOV
-    
+    local closest, shortest = nil, settings.FOV
     for _, plr in ipairs(game.Players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
             if settings.TeamCheck and plr.Team == player.Team then continue end
-            
             local part = plr.Character:FindFirstChild(settings.AimPart)
             if part then
                 local pos, onScreen = camera:WorldToViewportPoint(part.Position)
                 if onScreen then
                     local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
-                    if dist < shortestDist then
-                        shortestDist = dist
+                    if dist < shortest then
+                        shortest = dist
                         closest = plr
                     end
                 end
@@ -161,11 +159,8 @@ local function getClosestPlayer()
     return closest
 end
 
--- Наводка (плавная)
 game:GetService("RunService").RenderStepped:Connect(function()
-    if not settings.Aimbot then return end
-    if not mouse.Target then return end
-    
+    if not settings.Aimbot or not mouse.Target then return end
     local target = getClosestPlayer()
     if target then
         local aimPart = target.Character:FindFirstChild(settings.AimPart)
@@ -173,110 +168,115 @@ game:GetService("RunService").RenderStepped:Connect(function()
             local aimPos = aimPart.Position
             local currentPos = camera.CFrame.Position
             local direction = (aimPos - currentPos).Unit
-            local targetCFrame = CFrame.new(currentPos, currentPos + direction)
-            
-            -- Плавная интерполяция (smooth)
-            camera.CFrame = camera.CFrame:Lerp(targetCFrame, settings.Smooth)
+            camera.CFrame = camera.CFrame:Lerp(CFrame.new(currentPos, currentPos + direction), settings.Smooth)
         end
     end
 end)
 
--- ===== ESP ЛОГИКА =====
+-- ===== ESP (со скелетом, стенами, HP, именем) =====
 local espObjects = {}
 
 local function createESP(plr)
-    if espObjects[plr] then return end
-    
+    if espObjects[plr] or not plr.Character then return end
     local char = plr.Character
-    if not char then return end
-    
     local folder = Instance.new("Folder")
-    folder.Name = "SWILL_ESP"
+    folder.Name = "DENWEN_ESP"
     folder.Parent = char
-    
-    -- Box
-    local box = Instance.new("BoxHandleAdornment")
-    box.Size = Vector3.new(3, 5, 1)
-    box.Adornee = char
-    box.Color3 = Color3.fromRGB(200, 0, 0)
-    box.Transparency = 0.3
-    box.ZIndex = 0
-    box.Parent = folder
-    
-    -- Имя
-    local nameLabel = Instance.new("BillboardGui")
-    nameLabel.Adornee = char:FindFirstChild("Head")
-    nameLabel.Size = UDim2.new(0, 100, 0, 30)
-    nameLabel.StudsOffset = Vector3.new(0, 3, 0)
-    nameLabel.Parent = folder
-    
-    local nameText = Instance.new("TextLabel")
-    nameText.Size = UDim2.new(1, 0, 1, 0)
-    nameText.BackgroundTransparency = 1
-    nameText.Text = plr.Name
-    nameText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameText.TextScaled = true
-    nameText.Font = Enum.Font.GothamBold
-    nameText.Parent = nameLabel
-    
-    -- Здоровье (полоска)
-    local healthBar = Instance.new("BillboardGui")
-    healthBar.Adornee = char:FindFirstChild("Head")
-    healthBar.Size = UDim2.new(0, 50, 0, 5)
-    healthBar.StudsOffset = Vector3.new(0, 2.5, 0)
-    healthBar.Parent = folder
-    
-    local healthBg = Instance.new("Frame")
-    healthBg.Size = UDim2.new(1, 0, 1, 0)
-    healthBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    healthBg.Parent = healthBar
-    
-    local healthFill = Instance.new("Frame")
-    healthFill.Size = UDim2.new(1, 0, 1, 0)
-    healthFill.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-    healthFill.Parent = healthBg
-    
-    espObjects[plr] = {
-        Folder = folder,
-        Health = healthFill,
-        Char = char
-    }
-end
 
-local function updateESP()
-    for plr, data in pairs(espObjects) do
-        if not plr.Character or not plr.Character.Parent then
-            data.Folder:Destroy()
-            espObjects[plr] = nil
-        else
-            local hum = plr.Character:FindFirstChild("Humanoid")
-            if hum then
-                local health = hum.Health / hum.MaxHealth
-                data.Health.Size = UDim2.new(health, 0, 1, 0)
-            end
+    -- Коробка
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = Vector3.new(3.5, 5.5, 1.5)
+    box.Adornee = char
+    box.Color3 = settings.ESPColor
+    box.Transparency = 0.2
+    box.ZIndex = 0
+    box.AlwaysOnTop = settings.WallHack
+    box.Parent = folder
+
+    -- Скелет (линии)
+    if settings.ShowSkeleton then
+        local function addLine(part1, part2, color)
+            local line = Instance.new("LineHandleAdornment")
+            line.Adornee = char
+            line.Point1 = part1.Position
+            line.Point2 = part2.Position
+            line.Color3 = color or settings.ESPColor
+            line.Thickness = 2
+            line.Transparency = 0.3
+            line.AlwaysOnTop = settings.WallHack
+            line.Parent = folder
+            return line
+        end
+        local head = char:FindFirstChild("Head")
+        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+        local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
+        local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
+        local leftLeg = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftLowerLeg")
+        local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
+        if head and torso then
+            addLine(head, torso)
+            if leftArm then addLine(torso, leftArm) end
+            if rightArm then addLine(torso, rightArm) end
+            if leftLeg then addLine(torso, leftLeg) end
+            if rightLeg then addLine(torso, rightLeg) end
         end
     end
-end
 
--- Добавление ESP для новых игроков
-game.Players.PlayerAdded:Connect(function(plr)
-    if settings.ESP then
-        plr.CharacterAdded:Connect(function(char)
-            wait(0.5)
-            createESP(plr)
-        end)
+    -- Имя
+    if settings.ShowName then
+        local nameGui = Instance.new("BillboardGui")
+        nameGui.Adornee = char:FindFirstChild("Head")
+        nameGui.Size = UDim2.new(0, 120, 0, 25)
+        nameGui.StudsOffset = Vector3.new(0, 3, 0)
+        nameGui.Parent = folder
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = plr.Name
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameLabel.TextScaled = true
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.Parent = nameGui
     end
-end)
+
+    -- HP
+    if settings.ShowHealth then
+        local healthGui = Instance.new("BillboardGui")
+        healthGui.Adornee = char:FindFirstChild("Head")
+        healthGui.Size = UDim2.new(0, 60, 0, 5)
+        healthGui.StudsOffset = Vector3.new(0, 2.3, 0)
+        healthGui.Parent = folder
+        local bg = Instance.new("Frame")
+        bg.Size = UDim2.new(1, 0, 1, 0)
+        bg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        bg.Parent = healthGui
+        local fill = Instance.new("Frame")
+        fill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        fill.Size = UDim2.new(1, 0, 1, 0)
+        fill.Parent = bg
+        espObjects[plr] = {Folder = folder, Health = fill, Char = char}
+    end
+end
 
 -- Обновление ESP
 game:GetService("RunService").RenderStepped:Connect(function()
     if settings.ESP then
         for _, plr in ipairs(game.Players:GetPlayers()) do
-            if plr ~= player and not espObjects[plr] then
+            if plr ~= player and plr.Character and not espObjects[plr] then
                 createESP(plr)
             end
         end
-        updateESP()
+        for plr, data in pairs(espObjects) do
+            if not plr.Character or not plr.Character.Parent then
+                data.Folder:Destroy()
+                espObjects[plr] = nil
+            elseif settings.ShowHealth then
+                local hum = plr.Character:FindFirstChild("Humanoid")
+                if hum then
+                    data.Health.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
+                end
+            end
+        end
     else
         for _, data in pairs(espObjects) do
             data.Folder:Destroy()
@@ -285,4 +285,4 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
-print("SWILL Aimbot + ESP загружен!")
+print("DENWEN ULTRA v2.0 загружен!")
