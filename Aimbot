@@ -1,7 +1,9 @@
 -- ==============================================
--- SWILL Light (ESP + Aimbot + Wall + Hitboxes)
--- Menu: B или D
--- Чёрно-красный, компактный
+-- SWILL Duels (Murderer vs Sheriff)
+-- ESP: Green = Team, Red = Enemy
+-- Aimbot: only vs enemies
+-- NoClip, Spider, Invisible
+-- Menu: B or D
 -- ==============================================
 
 local plr = game.Players.LocalPlayer
@@ -12,7 +14,7 @@ local uis = game:GetService("UserInputService")
 local players = game:GetService("Players")
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "SWILL_Light"
+gui.Name = "SWILL_Duels"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = plr.PlayerGui
@@ -34,51 +36,85 @@ circleUI.Parent = fovCircle
 
 local circleStroke = Instance.new("UIStroke")
 circleStroke.Color = Color3.fromRGB(255, 0, 0)
-circleStroke.Thickness = 3
+circleStroke.Thickness = 2
 circleStroke.LineJoinMode = Enum.LineJoinMode.Round
 circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 circleStroke.Parent = fovCircle
 
--- ===== КНОПКА МЕНЮ (B) =====
+-- ===== КНОПКА МЕНЮ =====
 local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0, 40, 0, 40)
-btn.Position = UDim2.new(0, 50, 0, 50)
+btn.Size = UDim2.new(0, 36, 0, 36)
+btn.Position = UDim2.new(0, 20, 0, 20)
 btn.BackgroundColor3 = Color3.new(0, 0, 0)
 btn.TextColor3 = Color3.new(1, 0, 0)
 btn.Text = "SW"
 btn.Font = Enum.Font.SourceSansBold
-btn.TextSize = 16
+btn.TextSize = 14
 btn.BorderSizePixel = 0
 btn.Parent = gui
 
 local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 16)
+btnCorner.CornerRadius = UDim.new(0, 12)
 btnCorner.Parent = btn
 
--- ===== МЕНЮ (уменьшенное) =====
+-- ===== МЕНЮ (компактное, красивое) =====
 local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0, 240, 0, 330)
-menu.BackgroundColor3 = Color3.new(0, 0, 0)
-menu.BorderSizePixel = 2
-menu.BorderColor3 = Color3.new(1, 0, 0)
+menu.Size = UDim2.new(0, 200, 0, 280)
+menu.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+menu.BorderSizePixel = 1
+menu.BorderColor3 = Color3.new(0.8, 0, 0)
 menu.Visible = false
 menu.Parent = gui
 
 local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 16)
+menuCorner.CornerRadius = UDim.new(0, 12)
 menuCorner.Parent = menu
 
 -- ===== ПЕРЕМЕННЫЕ =====
 local aim = false
 local esp = false
 local wall = false
-local hitboxScale = 1.0
+local noClip = false
+local spider = false
+local invisible = false
 local fovSize = 35
-local espColor = Color3.new(1, 0, 0)
-local fovColor = Color3.new(1, 0, 0)
 
 local highlights = {}
-local hitboxObjects = {}
+local teamColor = Color3.new(0, 1, 0)   -- зелёный (союзники)
+local enemyColor = Color3.new(1, 0, 0) -- красный (враги)
+
+-- ===== ОПРЕДЕЛЕНИЕ КОМАНДЫ (Duels) =====
+local function getTeam(player)
+    if not player or not player.Character then return nil end
+    -- Ищем тег команды в имени или атрибутах (подстрой под свой режим)
+    local name = player.Name:lower()
+    if name:find("sheriff") or name:find("шериф") then
+        return "Sheriff"
+    elseif name:find("murderer") or name:find("убийц") or name:find("kill") then
+        return "Murderer"
+    end
+    -- Если не нашлось — проверяем через игровые теги (например, в Team)
+    if player.Team then
+        return player.Team.Name
+    end
+    -- Фолбэк: если игрок в одной группе с вами — союзник, иначе враг
+    local myTeam = plr.Team
+    if myTeam and player.Team == myTeam then
+        return "Ally"
+    else
+        return "Enemy"
+    end
+end
+
+local function isEnemy(player)
+    if player == plr then return false end
+    local myTeam = getTeam(plr)
+    local theirTeam = getTeam(player)
+    if myTeam == "Ally" or theirTeam == "Ally" then
+        return myTeam ~= theirTeam
+    end
+    return theirTeam ~= myTeam
+end
 
 -- ===== WALLHACK =====
 local function canSee(pos1, pos2)
@@ -87,16 +123,16 @@ local function canSee(pos1, pos2)
     return (hit - pos1).Magnitude >= (pos2 - pos1).Magnitude - 2
 end
 
--- ===== СОЗДАНИЕ КНОПОК (компактные) =====
+-- ===== СОЗДАНИЕ КНОПОК (красивые) =====
 local function makeToggle(name, y, def, callback)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 220, 0, 32)
+    b.Size = UDim2.new(0, 180, 0, 28)
     b.Position = UDim2.new(0, 10, 0, y)
-    b.BackgroundColor3 = def and Color3.new(0.3, 0, 0) or Color3.new(0.1, 0.1, 0.1)
+    b.BackgroundColor3 = def and Color3.new(0.35, 0, 0) or Color3.new(0.12, 0.12, 0.12)
     b.TextColor3 = Color3.new(1, 1, 1)
     b.Text = name .. ": " .. (def and "ON" or "OFF")
     b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 16
+    b.TextSize = 14
     b.BorderSizePixel = 0
     b.Parent = menu
 
@@ -106,183 +142,52 @@ local function makeToggle(name, y, def, callback)
 
     b.MouseButton1Click:Connect(function()
         def = not def
-        b.BackgroundColor3 = def and Color3.new(0.3, 0, 0) or Color3.new(0.1, 0.1, 0.1)
+        b.BackgroundColor3 = def and Color3.new(0.35, 0, 0) or Color3.new(0.12, 0.12, 0.12)
         b.Text = name .. ": " .. (def and "ON" or "OFF")
         if callback then callback(def) end
     end)
     return b
 end
 
--- ===== КНОПКИ (3 шт) =====
+-- ===== КНОПКИ =====
 makeToggle("Aimbot", 10, aim, function(v) aim = v end)
-makeToggle("ESP", 52, esp, function(v) esp = v end)
-makeToggle("WallCheck", 94, wall, function(v) wall = v end)
-
--- ===== ХИТБОКСЫ (категория) =====
-local hbLabel = Instance.new("TextLabel")
-hbLabel.Size = UDim2.new(0, 220, 0, 20)
-hbLabel.Position = UDim2.new(0, 10, 0, 136)
-hbLabel.Text = "=== HITBOXES ==="
-hbLabel.TextColor3 = Color3.new(1, 0, 0)
-hbLabel.BackgroundTransparency = 1
-hbLabel.Font = Enum.Font.SourceSansBold
-hbLabel.TextSize = 14
-hbLabel.Parent = menu
-
--- Scale (увеличение)
-local scaleLabel = Instance.new("TextLabel")
-scaleLabel.Size = UDim2.new(0, 100, 0, 20)
-scaleLabel.Position = UDim2.new(0, 10, 0, 160)
-scaleLabel.Text = "Scale: " .. string.format("%.1f", hitboxScale)
-scaleLabel.TextColor3 = Color3.new(1, 1, 1)
-scaleLabel.BackgroundTransparency = 1
-scaleLabel.Font = Enum.Font.SourceSansBold
-scaleLabel.TextSize = 14
-scaleLabel.Parent = menu
-
-local scaleBox = Instance.new("TextBox")
-scaleBox.Size = UDim2.new(0, 80, 0, 28)
-scaleBox.Position = UDim2.new(0, 140, 0, 158)
-scaleBox.Text = tostring(hitboxScale)
-scaleBox.BackgroundColor3 = Color3.new(0.15, 0, 0)
-scaleBox.TextColor3 = Color3.new(1, 1, 1)
-scaleBox.Font = Enum.Font.SourceSansBold
-scaleBox.TextSize = 16
-scaleBox.ClearTextOnFocus = false
-scaleBox.Parent = menu
-
-local scaleCorner = Instance.new("UICorner")
-scaleCorner.CornerRadius = UDim.new(0, 8)
-scaleCorner.Parent = scaleBox
-
-scaleBox.FocusLost:Connect(function()
-    local v = tonumber(scaleBox.Text)
-    if v then
-        hitboxScale = math.clamp(v, 1.0, 5.0)
-        scaleLabel.Text = "Scale: " .. string.format("%.1f", hitboxScale)
-        scaleBox.Text = string.format("%.1f", hitboxScale)
-        -- пересоздать хитбоксы при изменении
-        if esp then updateHitboxes() end
-    else
-        scaleBox.Text = string.format("%.1f", hitboxScale)
-    end
-end)
-
--- ===== ЦВЕТ ESP =====
-local espColorLabel = Instance.new("TextLabel")
-espColorLabel.Size = UDim2.new(0, 80, 0, 20)
-espColorLabel.Position = UDim2.new(0, 10, 0, 200)
-espColorLabel.Text = "ESP Color"
-espColorLabel.TextColor3 = Color3.new(1, 0, 0)
-espColorLabel.BackgroundTransparency = 1
-espColorLabel.Font = Enum.Font.SourceSansBold
-espColorLabel.TextSize = 14
-espColorLabel.Parent = menu
-
-local espColorBox = Instance.new("TextBox")
-espColorBox.Size = UDim2.new(0, 120, 0, 28)
-espColorBox.Position = UDim2.new(0, 100, 0, 198)
-espColorBox.Text = "255,0,0"
-espColorBox.BackgroundColor3 = Color3.new(0.15, 0, 0)
-espColorBox.TextColor3 = Color3.new(1, 1, 1)
-espColorBox.Font = Enum.Font.SourceSansBold
-espColorBox.TextSize = 16
-espColorBox.ClearTextOnFocus = false
-espColorBox.Parent = menu
-
-local espCorner = Instance.new("UICorner")
-espCorner.CornerRadius = UDim.new(0, 8)
-espCorner.Parent = espColorBox
-
-espColorBox.FocusLost:Connect(function()
-    local r,g,b = espColorBox.Text:match("(%d+),(%d+),(%d+)")
-    if r and g and b then
-        r = math.clamp(tonumber(r), 0, 255)
-        g = math.clamp(tonumber(g), 0, 255)
-        b = math.clamp(tonumber(b), 0, 255)
-        espColor = Color3.fromRGB(r, g, b)
-        espColorBox.Text = r..","..g..","..b
-        for _, h in pairs(highlights) do if h then h.FillColor = espColor end end
-        if esp then updateHitboxes() end
-    else
-        espColorBox.Text = "255,0,0"
-        espColor = Color3.new(1,0,0)
-    end
-end)
-
--- ===== ЦВЕТ FOV =====
-local fovColorLabel = Instance.new("TextLabel")
-fovColorLabel.Size = UDim2.new(0, 80, 0, 20)
-fovColorLabel.Position = UDim2.new(0, 10, 0, 240)
-fovColorLabel.Text = "FOV Color"
-fovColorLabel.TextColor3 = Color3.new(1, 0, 0)
-fovColorLabel.BackgroundTransparency = 1
-fovColorLabel.Font = Enum.Font.SourceSansBold
-fovColorLabel.TextSize = 14
-fovColorLabel.Parent = menu
-
-local fovColorBox = Instance.new("TextBox")
-fovColorBox.Size = UDim2.new(0, 120, 0, 28)
-fovColorBox.Position = UDim2.new(0, 100, 0, 238)
-fovColorBox.Text = "255,0,0"
-fovColorBox.BackgroundColor3 = Color3.new(0.15, 0, 0)
-fovColorBox.TextColor3 = Color3.new(1, 1, 1)
-fovColorBox.Font = Enum.Font.SourceSansBold
-fovColorBox.TextSize = 16
-fovColorBox.ClearTextOnFocus = false
-fovColorBox.Parent = menu
-
-local fovCorner = Instance.new("UICorner")
-fovCorner.CornerRadius = UDim.new(0, 8)
-fovCorner.Parent = fovColorBox
-
-fovColorBox.FocusLost:Connect(function()
-    local r,g,b = fovColorBox.Text:match("(%d+),(%d+),(%d+)")
-    if r and g and b then
-        r = math.clamp(tonumber(r), 0, 255)
-        g = math.clamp(tonumber(g), 0, 255)
-        b = math.clamp(tonumber(b), 0, 255)
-        fovColor = Color3.fromRGB(r, g, b)
-        circleStroke.Color = fovColor
-        fovColorBox.Text = r..","..g..","..b
-    else
-        fovColorBox.Text = "255,0,0"
-        fovColor = Color3.new(1,0,0)
-        circleStroke.Color = fovColor
-    end
-end)
+makeToggle("ESP", 45, esp, function(v) esp = v end)
+makeToggle("WallCheck", 80, wall, function(v) wall = v end)
+makeToggle("NoClip", 115, noClip, function(v) noClip = v end)
+makeToggle("Spider", 150, spider, function(v) spider = v end)
+makeToggle("Invisible", 185, invisible, function(v) invisible = v end)
 
 -- ===== FOV РАЗМЕР =====
-local fovSizeLabel = Instance.new("TextLabel")
-fovSizeLabel.Size = UDim2.new(0, 100, 0, 20)
-fovSizeLabel.Position = UDim2.new(0, 10, 0, 280)
-fovSizeLabel.Text = "FOV: " .. math.floor(fovSize)
-fovSizeLabel.TextColor3 = Color3.new(1, 0, 0)
-fovSizeLabel.BackgroundTransparency = 1
-fovSizeLabel.Font = Enum.Font.SourceSansBold
-fovSizeLabel.TextSize = 14
-fovSizeLabel.Parent = menu
+local fovLabel = Instance.new("TextLabel")
+fovLabel.Size = UDim2.new(0, 80, 0, 18)
+fovLabel.Position = UDim2.new(0, 10, 0, 222)
+fovLabel.Text = "FOV: " .. math.floor(fovSize)
+fovLabel.TextColor3 = Color3.new(1, 0, 0)
+fovLabel.BackgroundTransparency = 1
+fovLabel.Font = Enum.Font.SourceSansBold
+fovLabel.TextSize = 13
+fovLabel.Parent = menu
 
 local fovBox = Instance.new("TextBox")
-fovBox.Size = UDim2.new(0, 80, 0, 28)
-fovBox.Position = UDim2.new(0, 140, 0, 278)
+fovBox.Size = UDim2.new(0, 60, 0, 24)
+fovBox.Position = UDim2.new(0, 120, 0, 220)
 fovBox.Text = tostring(math.floor(fovSize))
 fovBox.BackgroundColor3 = Color3.new(0.15, 0, 0)
 fovBox.TextColor3 = Color3.new(1, 1, 1)
 fovBox.Font = Enum.Font.SourceSansBold
-fovBox.TextSize = 16
+fovBox.TextSize = 14
 fovBox.ClearTextOnFocus = false
 fovBox.Parent = menu
 
-local fovBoxCorner = Instance.new("UICorner")
-fovBoxCorner.CornerRadius = UDim.new(0, 8)
-fovBoxCorner.Parent = fovBox
+local fovCorner = Instance.new("UICorner")
+fovCorner.CornerRadius = UDim.new(0, 6)
+fovCorner.Parent = fovBox
 
 fovBox.FocusLost:Connect(function()
     local v = tonumber(fovBox.Text)
     if v then
         fovSize = math.clamp(v, 10, 300)
-        fovSizeLabel.Text = "FOV: " .. math.floor(fovSize)
+        fovLabel.Text = "FOV: " .. math.floor(fovSize)
         fovBox.Text = tostring(math.floor(fovSize))
     else
         fovBox.Text = tostring(math.floor(fovSize))
@@ -291,8 +196,7 @@ end)
 
 -- ===== ДВИЖЕНИЕ КНОПКИ =====
 local dragging = false
-local dragStart
-local startPos
+local dragStart, startPos
 
 btn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -322,7 +226,7 @@ uis.InputChanged:Connect(function(input)
             local screenW = cam.ViewportSize.X
             local menuW = menu.AbsoluteSize.X
             if absX < screenW / 2 then
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 65, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 50, 0, btn.AbsolutePosition.Y)
             else
                 menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
             end
@@ -337,7 +241,7 @@ local function toggleMenu()
         local screenW = cam.ViewportSize.X
         local menuW = menu.AbsoluteSize.X
         if absX < screenW / 2 then
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 65, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 50, 0, btn.AbsolutePosition.Y)
         else
             menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
         end
@@ -349,64 +253,49 @@ uis.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.D then toggleMenu() end
 end)
 
--- ===== ХИТБОКСЫ (создание/обновление) =====
-local function createHitbox(part, color, scale)
-    if not part then return nil end
-    local box = Instance.new("BoxHandleAdornment")
-    box.Adornee = part
-    box.Color3 = color
-    box.Transparency = 0.4
-    box.ZIndex = 10
-    box.AlwaysOnTop = true
-    box.Size = part.Size * scale
-    box.Parent = part
-    return box
-end
-
-local function clearHitboxes()
-    for _, obj in pairs(hitboxObjects) do
-        if obj then obj:Destroy() end
+-- ===== NoClip =====
+local function setNoClip(enabled)
+    if not plr.Character then return end
+    for _, part in ipairs(plr.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not enabled
+        end
     end
-    hitboxObjects = {}
 end
 
-local function updateHitboxes()
-    clearHitboxes()
-    if not esp then return end
-    for _, p in ipairs(players:GetPlayers()) do
-        if p ~= plr and p.Character then
-            local char = p.Character
-            local parts = {
-                char:FindFirstChild("Head"),
-                char:FindFirstChild("UpperTorso"),
-                char:FindFirstChild("LowerTorso"),
-                char:FindFirstChild("LeftHand"),
-                char:FindFirstChild("RightHand"),
-                char:FindFirstChild("LeftFoot"),
-                char:FindFirstChild("RightFoot")
-            }
-            for _, part in ipairs(parts) do
-                if part then
-                    local box = createHitbox(part, espColor, hitboxScale)
-                    if box then table.insert(hitboxObjects, box) end
-                end
-            end
+-- ===== Spider (ходьба по стенам) =====
+local function setSpider(enabled)
+    if not plr.Character then return end
+    local root = plr.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        root.CustomPhysicalProperties = enabled and PhysicalProperties.new(0, 0, 0, 0, 0) or PhysicalProperties.new(0.5, 0.5, 0.5, 0.5, 0.5)
+    end
+end
+
+-- ===== Invisible =====
+local function setInvisible(enabled)
+    if not plr.Character then return end
+    for _, part in ipairs(plr.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Transparency = enabled and 1 or 0
+        elseif part:IsA("Accessory") then
+            part.Handle.Transparency = enabled and 1 or 0
         end
     end
 end
 
 -- ===== ГЛАВНЫЙ ЦИКЛ =====
 rs.RenderStepped:Connect(function()
-    -- ESP (Highlight)
+    -- ESP с цветом по команде
     if esp then
         for _, p in ipairs(players:GetPlayers()) do
             if p ~= plr and p.Character then
                 if not highlights[p] then
                     local h = Instance.new("Highlight")
-                    h.FillColor = espColor
-                    h.FillTransparency = 0.6
+                    h.FillColor = isEnemy(p) and enemyColor or teamColor
+                    h.FillTransparency = 0.5
                     h.OutlineColor = Color3.new(1, 1, 1)
-                    h.OutlineTransparency = 0.2
+                    h.OutlineTransparency = 0.3
                     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     h.Parent = p.Character
                     highlights[p] = h
@@ -417,7 +306,7 @@ rs.RenderStepped:Connect(function()
                         end
                     end)
                 else
-                    highlights[p].FillColor = espColor
+                    highlights[p].FillColor = isEnemy(p) and enemyColor or teamColor
                 end
             end
         end
@@ -427,17 +316,14 @@ rs.RenderStepped:Connect(function()
                 highlights[p] = nil
             end
         end
-        -- обновить хитбоксы если изменился масштаб или цвет
-        updateHitboxes()
     else
         for _, h in pairs(highlights) do
             if h then h:Destroy() end
         end
         highlights = {}
-        clearHitboxes()
     end
 
-    -- AIMBOT
+    -- AIMBOT только по врагам
     if aim and plr.Character then
         local camPos = cam.CFrame.Position
         local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
@@ -445,7 +331,7 @@ rs.RenderStepped:Connect(function()
         local bestDist = math.huge
 
         for _, p in ipairs(players:GetPlayers()) do
-            if p ~= plr and p.Character then
+            if p ~= plr and isEnemy(p) and p.Character then
                 local head = p.Character:FindFirstChild("Head")
                 if head then
                     local scr, onScreen = cam:WorldToViewportPoint(head.Position)
@@ -474,6 +360,15 @@ rs.RenderStepped:Connect(function()
     fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
     fovCircle.Visible = aim
     fovCircle.Position = UDim2.new(0.5, 0, 0.5, -27)
+
+    -- NoClip
+    setNoClip(noClip)
+
+    -- Spider
+    setSpider(spider)
+
+    -- Invisible
+    setInvisible(invisible)
 end)
 
-print("SWILL Light loaded (Hitboxes + ESP Color). Menu: B or D")
+print("SWILL Duels loaded! ESP: Green=Team, Red=Enemy. Aimbot only vs enemies. Menu: B or D")
