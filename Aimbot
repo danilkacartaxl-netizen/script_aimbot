@@ -1,59 +1,95 @@
 -- ==============================================
--- DENWEN ULTRA AIMBOT + ESP v2.0
--- Круг FOV, скелет, стены, компактное меню
+-- DENWEN ULTRA v3.0 (MINIMAL)
+-- Черное меню, серые кнопки, голубые ползунки
 -- ==============================================
 
 local player = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local mouse = player:GetMouse()
 
--- Настройки
 local settings = {
     Aimbot = false,
     ESP = false,
     AimPart = "Head",
     FOV = 250,
-    Smooth = 0.25,
+    Smooth = 0.2,
     TeamCheck = true,
-    ESPColor = Color3.fromRGB(255, 0, 0),
+    ESPColor = Color3.fromRGB(0, 150, 255),
     ShowSkeleton = true,
     ShowHealth = true,
     ShowName = true,
     WallHack = true
 }
 
--- ===== КОМПАКТНОЕ МЕНЮ =====
+-- ===== СОЗДАНИЕ ГЛАВНОГО GUI =====
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 180, 0, 220)
-mainFrame.Position = UDim2.new(0.02, 0, 0.5, -110)
-mainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-mainFrame.BackgroundTransparency = 0.15
-mainFrame.BorderSizePixel = 1
-mainFrame.BorderColor3 = Color3.fromRGB(180, 0, 0)
+mainFrame.Size = UDim2.new(0, 220, 0, 320)
+mainFrame.Position = UDim2.new(0.02, 0, 0.5, -160)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
--- Заголовок "DENWEN"
+-- Скругление углов
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+-- Тень
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(1, 10, 1, 10)
+shadow.Position = UDim2.new(0, -5, 0, -5)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.8
+shadow.BorderSizePixel = 0
+shadow.ZIndex = -1
+shadow.Parent = mainFrame
+local shadowCorner = Instance.new("UICorner")
+shadowCorner.CornerRadius = UDim.new(0, 10)
+shadowCorner.Parent = shadow
+
+-- Заголовок
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 25)
+title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
 title.Text = "DENWEN"
-title.TextColor3 = Color3.fromRGB(200, 0, 0)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
 title.Parent = mainFrame
 
--- Кнопка закрытия (крестик)
+-- Подзаголовок
+local subtitle = Instance.new("TextLabel")
+subtitle.Size = UDim2.new(1, 0, 0, 20)
+subtitle.Position = UDim2.new(0, 0, 0, 25)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = "• ULTRA v3.0 •"
+subtitle.TextColor3 = Color3.fromRGB(150, 150, 150)
+subtitle.TextScaled = true
+subtitle.Font = Enum.Font.Gotham
+subtitle.Parent = mainFrame
+
+-- Линия-разделитель
+local line = Instance.new("Frame")
+line.Size = UDim2.new(0.9, 0, 0, 1)
+line.Position = UDim2.new(0.05, 0, 0, 48)
+line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+line.BorderSizePixel = 0
+line.Parent = mainFrame
+
+-- Кнопка закрытия
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 20, 0, 20)
-closeBtn.Position = UDim2.new(1, -25, 0, 2)
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -30, 0, 5)
 closeBtn.BackgroundTransparency = 1
 closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(180, 0, 0)
+closeBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 closeBtn.TextScaled = true
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = mainFrame
@@ -61,73 +97,147 @@ closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- Функция создания кнопок
-local function createButton(text, yPos, callback)
+-- ===== ФУНКЦИЯ СОЗДАНИЯ КНОПОК-ТОГГЛОВ =====
+local function createToggle(text, yPos, getter, setter, color)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 30)
+    frame.Position = UDim2.new(0.05, 0, 0, yPos)
+    frame.BackgroundTransparency = 1
+    frame.Parent = mainFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 140, 0, 28)
-    btn.Position = UDim2.new(0.5, -70, 0, yPos)
-    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    btn.BorderColor3 = Color3.fromRGB(150, 0, 0)
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.Size = UDim2.new(0, 50, 0, 20)
+    btn.Position = UDim2.new(0.75, 0, 0.5, -10)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Text = "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextScaled = true
-    btn.Font = Enum.Font.Gotham
-    btn.Parent = mainFrame
-    btn.MouseButton1Click:Connect(callback)
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = frame
+
+    local cornerBtn = Instance.new("UICorner")
+    cornerBtn.CornerRadius = UDim.new(0, 4)
+    cornerBtn.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        local state = getter()
+        setter(not state)
+        btn.Text = state and "OFF" or "ON"
+        btn.BackgroundColor3 = state and Color3.fromRGB(50, 50, 50) or Color3.fromRGB(0, 150, 255)
+    end)
+
     return btn
 end
 
--- Кнопки
-local aimBtn = createButton("AIMBOT: OFF", 35, function()
-    settings.Aimbot = not settings.Aimbot
-    aimBtn.Text = settings.Aimbot and "AIMBOT: ON" or "AIMBOT: OFF"
-    aimBtn.BackgroundColor3 = settings.Aimbot and Color3.fromRGB(60, 0, 0) or Color3.fromRGB(25, 25, 25)
-end)
+-- ===== ФУНКЦИЯ СОЗДАНИЯ ПОЛЗУНКА =====
+local function createSlider(text, yPos, min, max, default, setter, format)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 40)
+    frame.Position = UDim2.new(0.05, 0, 0, yPos)
+    frame.BackgroundTransparency = 1
+    frame.Parent = mainFrame
 
-local espBtn = createButton("ESP: OFF", 70, function()
-    settings.ESP = not settings.ESP
-    espBtn.Text = settings.ESP and "ESP: ON" or "ESP: OFF"
-    espBtn.BackgroundColor3 = settings.ESP and Color3.fromRGB(60, 0, 0) or Color3.fromRGB(25, 25, 25)
-end)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 0.5, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
 
--- Выбор цвета (циклично)
-local colors = {
-    {Color3.fromRGB(255, 0, 0), "КРАСНЫЙ"},
-    {Color3.fromRGB(0, 255, 0), "ЗЕЛЁНЫЙ"},
-    {Color3.fromRGB(0, 150, 255), "СИНИЙ"},
-    {Color3.fromRGB(255, 255, 0), "ЖЁЛТЫЙ"},
-    {Color3.fromRGB(255, 0, 255), "ФИОЛЕТ"}
-}
-local colorIndex = 1
-local colorBtn = createButton("ЦВЕТ: КРАСНЫЙ", 105, function()
-    colorIndex = colorIndex % #colors + 1
-    settings.ESPColor = colors[colorIndex][1]
-    colorBtn.Text = "ЦВЕТ: " .. colors[colorIndex][2]
-end)
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0.3, 0, 0.5, 0)
+    valueLabel.Position = UDim2.new(0.7, 0, 0, 0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = format and format(default) or tostring(default)
+    valueLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.TextScaled = true
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.Parent = frame
 
-local fovBtn = createButton("FOV: 250", 140, function()
-    local fovs = {150, 250, 350, 500}
-    local current = tonumber(fovBtn.Text:match("%d+"))
-    for i, v in ipairs(fovs) do
-        if v == current then
-            local nextIndex = i % #fovs + 1
-            settings.FOV = fovs[nextIndex]
-            fovBtn.Text = "FOV: " .. fovs[nextIndex]
-            break
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(1, 0, 0, 4)
+    slider.Position = UDim2.new(0, 0, 0.8, 0)
+    slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    slider.BorderSizePixel = 0
+    slider.Parent = frame
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    fill.BorderSizePixel = 0
+    fill.Parent = slider
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 12, 0, 12)
+    knob.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
+    knob.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    knob.BorderSizePixel = 0
+    knob.Parent = slider
+
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(0, 6)
+    knobCorner.Parent = knob
+
+    local dragging = false
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
         end
+    end)
+    slider.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    local function updateSlider(input)
+        if not dragging then return end
+        local pos = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+        local value = min + (max - min) * pos
+        fill.Size = UDim2.new(pos, 0, 1, 0)
+        knob.Position = UDim2.new(pos, -6, 0.5, -6)
+        setter(value)
+        valueLabel.Text = format and format(value) or tostring(math.floor(value))
     end
-end)
 
-local skelBtn = createButton("СКЕЛЕТ: ВКЛ", 175, function()
-    settings.ShowSkeleton = not settings.ShowSkeleton
-    skelBtn.Text = settings.ShowSkeleton and "СКЕЛЕТ: ВКЛ" or "СКЕЛЕТ: ВЫКЛ"
-end)
+    slider.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
+        end
+    end)
 
--- ===== КРУГ FOV =====
+    return slider
+end
+
+-- ===== СОЗДАНИЕ КНОПОК И ПОЛЗУНКОВ =====
+-- Тогглы
+local aimToggle = createToggle("AIMBOT", 55, function() return settings.Aimbot end, function(v) settings.Aimbot = v end)
+local espToggle = createToggle("ESP", 90, function() return settings.ESP end, function(v) settings.ESP = v end)
+local skelToggle = createToggle("SKELETON", 125, function() return settings.ShowSkeleton end, function(v) settings.ShowSkeleton = v end)
+
+-- Ползунки
+local fovSlider = createSlider("FOV", 165, 100, 500, settings.FOV, function(v) settings.FOV = v end, function(v) return tostring(math.floor(v)) end)
+local smoothSlider = createSlider("SMOOTH", 210, 0.05, 0.5, settings.Smooth, function(v) settings.Smooth = v end, function(v) return string.format("%.2f", v) end)
+
+-- ===== КРУГ FOV (адаптивный) =====
 local fovCircle = Instance.new("CircleHandleAdornment")
 fovCircle.Radius = settings.FOV / 3
-fovCircle.Color3 = Color3.fromRGB(200, 0, 0)
-fovCircle.Transparency = 0.7
+fovCircle.Color3 = Color3.fromRGB(0, 150, 255)
+fovCircle.Transparency = 0.5
 fovCircle.AlwaysOnTop = true
 fovCircle.ZIndex = 0
 fovCircle.Parent = camera
@@ -137,7 +247,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
     fovCircle.CFrame = camera.CFrame
 end)
 
--- ===== AIMBOT =====
+-- ===== AIMBOT (обновлённый) =====
 local function getClosestPlayer()
     local closest, shortest = nil, settings.FOV
     for _, plr in ipairs(game.Players:GetPlayers()) do
@@ -160,7 +270,7 @@ local function getClosestPlayer()
 end
 
 game:GetService("RunService").RenderStepped:Connect(function()
-    if not settings.Aimbot or not mouse.Target then return end
+    if not settings.Aimbot then return end
     local target = getClosestPlayer()
     if target then
         local aimPart = target.Character:FindFirstChild(settings.AimPart)
@@ -173,7 +283,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
--- ===== ESP (со скелетом, стенами, HP, именем) =====
+-- ===== ESP (минималистичный) =====
 local espObjects = {}
 
 local function createESP(plr)
@@ -183,51 +293,46 @@ local function createESP(plr)
     folder.Name = "DENWEN_ESP"
     folder.Parent = char
 
-    -- Коробка
     local box = Instance.new("BoxHandleAdornment")
-    box.Size = Vector3.new(3.5, 5.5, 1.5)
+    box.Size = Vector3.new(3, 5, 1)
     box.Adornee = char
     box.Color3 = settings.ESPColor
     box.Transparency = 0.2
-    box.ZIndex = 0
     box.AlwaysOnTop = settings.WallHack
     box.Parent = folder
 
-    -- Скелет (линии)
     if settings.ShowSkeleton then
-        local function addLine(part1, part2, color)
+        local function addLine(p1, p2)
             local line = Instance.new("LineHandleAdornment")
             line.Adornee = char
-            line.Point1 = part1.Position
-            line.Point2 = part2.Position
-            line.Color3 = color or settings.ESPColor
-            line.Thickness = 2
+            line.Point1 = p1.Position
+            line.Point2 = p2.Position
+            line.Color3 = settings.ESPColor
+            line.Thickness = 1.5
             line.Transparency = 0.3
             line.AlwaysOnTop = settings.WallHack
             line.Parent = folder
-            return line
         end
         local head = char:FindFirstChild("Head")
         local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-        local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
-        local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
-        local leftLeg = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftLowerLeg")
-        local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
+        local la = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
+        local ra = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
+        local ll = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftLowerLeg")
+        local rl = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
         if head and torso then
             addLine(head, torso)
-            if leftArm then addLine(torso, leftArm) end
-            if rightArm then addLine(torso, rightArm) end
-            if leftLeg then addLine(torso, leftLeg) end
-            if rightLeg then addLine(torso, rightLeg) end
+            if la then addLine(torso, la) end
+            if ra then addLine(torso, ra) end
+            if ll then addLine(torso, ll) end
+            if rl then addLine(torso, rl) end
         end
     end
 
-    -- Имя
     if settings.ShowName then
         local nameGui = Instance.new("BillboardGui")
         nameGui.Adornee = char:FindFirstChild("Head")
-        nameGui.Size = UDim2.new(0, 120, 0, 25)
-        nameGui.StudsOffset = Vector3.new(0, 3, 0)
+        nameGui.Size = UDim2.new(0, 100, 0, 20)
+        nameGui.StudsOffset = Vector3.new(0, 2.5, 0)
         nameGui.Parent = folder
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -239,12 +344,11 @@ local function createESP(plr)
         nameLabel.Parent = nameGui
     end
 
-    -- HP
     if settings.ShowHealth then
         local healthGui = Instance.new("BillboardGui")
         healthGui.Adornee = char:FindFirstChild("Head")
-        healthGui.Size = UDim2.new(0, 60, 0, 5)
-        healthGui.StudsOffset = Vector3.new(0, 2.3, 0)
+        healthGui.Size = UDim2.new(0, 50, 0, 4)
+        healthGui.StudsOffset = Vector3.new(0, 2, 0)
         healthGui.Parent = folder
         local bg = Instance.new("Frame")
         bg.Size = UDim2.new(1, 0, 1, 0)
@@ -254,11 +358,10 @@ local function createESP(plr)
         fill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
         fill.Size = UDim2.new(1, 0, 1, 0)
         fill.Parent = bg
-        espObjects[plr] = {Folder = folder, Health = fill, Char = char}
+        espObjects[plr] = {Folder = folder, Health = fill}
     end
 end
 
--- Обновление ESP
 game:GetService("RunService").RenderStepped:Connect(function()
     if settings.ESP then
         for _, plr in ipairs(game.Players:GetPlayers()) do
@@ -285,4 +388,4 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
-print("DENWEN ULTRA v2.0 загружен!")
+print("DENWEN ULTRA v3.0 (Minimal) загружен!")
