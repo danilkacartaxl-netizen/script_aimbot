@@ -1,6 +1,6 @@
 -- ==============================================
--- DENWEN v2.0 (на основе Bdev)
--- Компактное меню, ESP с выбором стиля, Aimbot
+-- DENWEN v3.0 (Bdev Style + New Aimbot)
+-- Старый дизайн, яркий ESP, плавный аимбот
 -- ==============================================
 
 local player = game.Players.LocalPlayer
@@ -9,239 +9,28 @@ local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 local userInput = game:GetService("UserInputService")
 
--- ===== ПЕРЕМЕННЫЕ (меняются через меню) =====
+-- ===== ПЕРЕМЕННЫЕ =====
 local aimbot = false
 local esp = false
 local wallhack = false
-local espStyle = "Skeleton" -- "Skeleton", "Torso", "Box"
-local aimPart = "Head"      -- "Head" или "Torso"
-local fov = 200
-local smooth = 0.25
-local espColor = Color3.fromRGB(255, 0, 0)
+local aimPart = "Head"  -- "Head" или "Torso"
+local fov = 250
+local smooth = 0.2
 
--- ===== GUI (КОМПАКТНОЕ, ЧЁРНО-КРАСНОЕ) =====
+-- ===== GUI (СТАРЫЙ СТИЛЬ, КАК В Bdev) =====
 local gui = Instance.new("ScreenGui")
 gui.Name = "DENWEN"
 gui.ResetOnSpawn = false
 gui.Parent = player.PlayerGui
 
--- Кнопка открытия меню (как в Bdev)
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0, 36, 0, 36)
-btn.Position = UDim2.new(0, 20, 0, 20)
-btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-btn.Text = "D"
-btn.Font = Enum.Font.SourceSansBold
-btn.TextSize = 24
-btn.BorderSizePixel = 2
-btn.BorderColor3 = Color3.fromRGB(200, 0, 0)
-btn.Parent = gui
-
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 10)
-btnCorner.Parent = btn
-
--- Меню (маленькое)
-local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0, 180, 0, 280)
-menu.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-menu.BorderSizePixel = 2
-menu.BorderColor3 = Color3.fromRGB(200, 0, 0)
-menu.Visible = false
-menu.Parent = gui
-
-local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 10)
-menuCorner.Parent = menu
-
--- Заголовок
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 28)
-title.BackgroundTransparency = 1
-title.Text = "DENWEN v2.0"
-title.TextColor3 = Color3.fromRGB(200, 0, 0)
-title.TextScaled = true
-title.Font = Enum.Font.GothamBold
-title.Parent = menu
-
--- Кнопка закрытия
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 20, 0, 20)
-closeBtn.Position = UDim2.new(1, -25, 0, 4)
-closeBtn.BackgroundTransparency = 1
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(200, 0, 0)
-closeBtn.TextScaled = true
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = menu
-closeBtn.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
-
--- Линия
-local line = Instance.new("Frame")
-line.Size = UDim2.new(0.9, 0, 0, 1)
-line.Position = UDim2.new(0.05, 0, 0, 32)
-line.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-line.BorderSizePixel = 0
-line.Parent = menu
-
--- ===== ФУНКЦИЯ СОЗДАНИЯ ТОГГЛА =====
-local function createToggle(text, yPos, getter, setter)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.9, 0, 0, 26)
-    frame.Position = UDim2.new(0.05, 0, 0, yPos)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    frame.BorderSizePixel = 0
-    frame.Parent = menu
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.55, 0, 1, 0)
-    label.Position = UDim2.new(0.05, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextScaled = true
-    label.Font = Enum.Font.Gotham
-    label.Parent = frame
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 40, 0, 18)
-    btn.Position = UDim2.new(0.7, 0, 0.5, -9)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.Text = getter() and "ON" or "OFF"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = frame
-
-    btn.MouseButton1Click:Connect(function()
-        local newState = not getter()
-        setter(newState)
-        btn.Text = newState and "ON" or "OFF"
-        btn.BackgroundColor3 = newState and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(50, 50, 50)
-    end)
-end
-
--- ===== ФУНКЦИЯ ДЛЯ КНОПОК ВЫБОРА =====
-local function createChoice(text, yPos, options, getter, setter)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.9, 0, 0, 26)
-    frame.Position = UDim2.new(0.05, 0, 0, yPos)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    frame.BorderSizePixel = 0
-    frame.Parent = menu
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.5, 0, 1, 0)
-    label.Position = UDim2.new(0.05, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextScaled = true
-    label.Font = Enum.Font.Gotham
-    label.Parent = frame
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 50, 0, 18)
-    btn.Position = UDim2.new(0.65, 0, 0.5, -9)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.Text = getter()
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = frame
-
-    btn.MouseButton1Click:Connect(function()
-        local current = getter()
-        local idx = table.find(options, current) or 1
-        local newIdx = idx % #options + 1
-        setter(options[newIdx])
-        btn.Text = options[newIdx]
-    end)
-end
-
--- ===== ТОГГЛЫ И ВЫБОРЫ =====
-createToggle("Aimbot", 40, function() return aimbot end, function(v) aimbot = v end)
-createToggle("ESP", 70, function() return esp end, function(v) esp = v end)
-createToggle("Wallhack", 100, function() return wallhack end, function(v) wallhack = v end)
-
-createChoice("ESP Style", 130, {"Skeleton", "Torso", "Box"}, function() return espStyle end, function(v) espStyle = v end)
-createChoice("Aim Part", 160, {"Head", "Torso"}, function() return aimPart end, function(v) aimPart = v end)
-
--- ===== ПОЛЗУНОК FOV =====
-local fovLabel = Instance.new("TextLabel")
-fovLabel.Size = UDim2.new(0.5, 0, 0, 20)
-fovLabel.Position = UDim2.new(0.05, 0, 0, 190)
-fovLabel.BackgroundTransparency = 1
-fovLabel.Text = "FOV: " .. fov
-fovLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-fovLabel.TextScaled = true
-fovLabel.Font = Enum.Font.Gotham
-fovLabel.Parent = menu
-
-local fovBox = Instance.new("TextBox")
-fovBox.Size = UDim2.new(0.3, 0, 0, 20)
-fovBox.Position = UDim2.new(0.65, 0, 0, 190)
-fovBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-fovBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-fovBox.Text = tostring(fov)
-fovBox.TextScaled = true
-fovBox.Font = Enum.Font.GothamBold
-fovBox.Parent = menu
-fovBox.FocusLost:Connect(function()
-    local v = tonumber(fovBox.Text)
-    if v then
-        fov = math.clamp(v, 50, 500)
-        fovLabel.Text = "FOV: " .. fov
-        fovBox.Text = tostring(fov)
-    else
-        fovBox.Text = tostring(fov)
-    end
-end)
-
--- ===== ПОЛЗУНОК SMOOTH (для плавности) =====
-local smoothLabel = Instance.new("TextLabel")
-smoothLabel.Size = UDim2.new(0.5, 0, 0, 20)
-smoothLabel.Position = UDim2.new(0.05, 0, 0, 215)
-smoothLabel.BackgroundTransparency = 1
-smoothLabel.Text = "Smooth: " .. string.format("%.2f", smooth)
-smoothLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-smoothLabel.TextScaled = true
-smoothLabel.Font = Enum.Font.Gotham
-smoothLabel.Parent = menu
-
-local smoothBox = Instance.new("TextBox")
-smoothBox.Size = UDim2.new(0.3, 0, 0, 20)
-smoothBox.Position = UDim2.new(0.65, 0, 0, 215)
-smoothBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-smoothBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-smoothBox.Text = string.format("%.2f", smooth)
-smoothBox.TextScaled = true
-smoothBox.Font = Enum.Font.GothamBold
-smoothBox.Parent = menu
-smoothBox.FocusLost:Connect(function()
-    local v = tonumber(smoothBox.Text)
-    if v then
-        smooth = math.clamp(v, 0.05, 0.8)
-        smoothLabel.Text = "Smooth: " .. string.format("%.2f", smooth)
-        smoothBox.Text = string.format("%.2f", smooth)
-    else
-        smoothBox.Text = string.format("%.2f", smooth)
-    end
-end)
-
--- ===== КРУГ FOV (через Frame, как в Bdev, но меньше) =====
+-- Круг FOV (как в Bdev)
 local fovCircle = Instance.new("Frame")
 fovCircle.Name = "FOVCircle"
 fovCircle.BackgroundTransparency = 1
 fovCircle.BorderSizePixel = 0
 fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-fovCircle.Size = UDim2.new(0, 1, 0, 1)
+fovCircle.Size = UDim2.new(0, 900, 0, 900)
 fovCircle.Visible = false
 fovCircle.Parent = gui
 
@@ -250,13 +39,109 @@ circleUI.CornerRadius = UDim.new(1, 0)
 circleUI.Parent = fovCircle
 
 local circleStroke = Instance.new("UIStroke")
-circleStroke.Color = Color3.fromRGB(200, 0, 0)
-circleStroke.Thickness = 2
+circleStroke.Color = Color3.fromRGB(255, 0, 0)
+circleStroke.Thickness = 3
 circleStroke.LineJoinMode = Enum.LineJoinMode.Round
 circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 circleStroke.Parent = fovCircle
 
--- ===== ДВИЖЕНИЕ КНОПКИ "D" (как в Bdev) =====
+-- Кнопка "B"
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0, 40, 0, 40)
+btn.Position = UDim2.new(0, 50, 0, 50)
+btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Text = "B"
+btn.Font = Enum.Font.SourceSansBold
+btn.TextSize = 28
+btn.BorderSizePixel = 0
+btn.Parent = gui
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 16)
+btnCorner.Parent = btn
+
+-- Меню
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 280, 0, 270)
+menu.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+menu.BorderSizePixel = 0
+menu.Visible = false
+menu.Parent = gui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 16)
+menuCorner.Parent = menu
+
+-- ===== ФУНКЦИЯ СОЗДАНИЯ КНОПОК =====
+local function makeToggle(name, y, def, callback)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 260, 0, 45)
+    b.Position = UDim2.new(0, 10, 0, y)
+    b.BackgroundColor3 = def and Color3.fromRGB(51, 51, 51) or Color3.fromRGB(25, 25, 25)
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Text = name .. ": " .. (def and "ON" or "OFF")
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 20
+    b.BorderSizePixel = 0
+    b.Parent = menu
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 10)
+    c.Parent = b
+
+    b.MouseButton1Click:Connect(function()
+        def = not def
+        b.BackgroundColor3 = def and Color3.fromRGB(51, 51, 51) or Color3.fromRGB(25, 25, 25)
+        b.Text = name .. ": " .. (def and "ON" or "OFF")
+        if callback then callback(def) end
+    end)
+    return b
+end
+
+-- ===== FOV (ввод числа) =====
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(0, 260, 0, 25)
+label.Position = UDim2.new(0, 10, 0, 175)
+label.Text = "FOV: " .. math.floor(fov)
+label.TextColor3 = Color3.fromRGB(255, 255, 255)
+label.BackgroundTransparency = 1
+label.Font = Enum.Font.SourceSansBold
+label.TextSize = 20
+label.Parent = menu
+
+local box = Instance.new("TextBox")
+box.Size = UDim2.new(0, 260, 0, 40)
+box.Position = UDim2.new(0, 10, 0, 203)
+box.Text = tostring(math.floor(fov))
+box.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
+box.TextColor3 = Color3.fromRGB(255, 255, 255)
+box.Font = Enum.Font.SourceSansBold
+box.TextSize = 20
+box.ClearTextOnFocus = false
+box.Parent = menu
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 10)
+boxCorner.Parent = box
+
+box.FocusLost:Connect(function()
+    local v = tonumber(box.Text)
+    if v then
+        fov = math.clamp(v, 50, 500)
+        label.Text = "FOV: " .. math.floor(fov)
+        box.Text = tostring(math.floor(fov))
+    else
+        box.Text = tostring(math.floor(fov))
+    end
+end)
+
+-- ===== КНОПКИ =====
+makeToggle("Aimbot", 10, aimbot, function(v) aimbot = v end)
+makeToggle("ESP", 65, esp, function(v) esp = v end)
+makeToggle("Wallhack", 120, wallhack, function(v) wallhack = v end)
+
+-- ===== ПЕРЕТАСКИВАНИЕ КНОПКИ (как в Bdev) =====
 local dragging = false
 local dragStart
 local startPos
@@ -280,15 +165,20 @@ end)
 userInput.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        btn.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
 
         if menu.Visible then
             local absX = btn.AbsolutePosition.X
             local screenW = camera.ViewportSize.X
+            local menuW = menu.AbsoluteSize.X
+
             if absX < screenW / 2 then
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 45, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 65, 0, btn.AbsolutePosition.Y)
             else
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - 185, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
             end
         end
     end
@@ -299,127 +189,53 @@ btn.MouseButton1Click:Connect(function()
     if menu.Visible then
         local absX = btn.AbsolutePosition.X
         local screenW = camera.ViewportSize.X
+        local menuW = menu.AbsoluteSize.X
         if absX < screenW / 2 then
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 45, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 65, 0, btn.AbsolutePosition.Y)
         else
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - 185, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
         end
     end
 end)
 
--- ===== ESP =====
-local espObjects = {}
+-- ===== ESP (ЯРКИЙ, СТАРЫЙ, ЧЕРЕЗ HIGHLIGHT) =====
+local highlights = {}
 
-local function createESP(plr)
-    if espObjects[plr] or not plr.Character then return end
-    local char = plr.Character
-    local folder = Instance.new("Folder")
-    folder.Name = "DENWEN_ESP"
-    folder.Parent = char
-
-    if espStyle == "Box" then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Size = Vector3.new(3, 5, 1)
-        box.Adornee = char
-        box.Color3 = espColor
-        box.Transparency = 0.2
-        box.AlwaysOnTop = wallhack
-        box.Parent = folder
-    elseif espStyle == "Torso" then
-        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-        if torso then
-            local box = Instance.new("BoxHandleAdornment")
-            box.Size = Vector3.new(2, 2.5, 1)
-            box.Adornee = torso
-            box.Color3 = espColor
-            box.Transparency = 0.2
-            box.AlwaysOnTop = wallhack
-            box.Parent = folder
-        end
-    elseif espStyle == "Skeleton" then
-        local function addLine(p1, p2)
-            local line = Instance.new("LineHandleAdornment")
-            line.Adornee = char
-            line.Point1 = p1.Position
-            line.Point2 = p2.Position
-            line.Color3 = espColor
-            line.Thickness = 1.5
-            line.Transparency = 0.3
-            line.AlwaysOnTop = wallhack
-            line.Parent = folder
-        end
-        local head = char:FindFirstChild("Head")
-        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-        local la = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
-        local ra = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
-        local ll = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftLowerLeg")
-        local rl = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
-        if head and torso then
-            addLine(head, torso)
-            if la then addLine(torso, la) end
-            if ra then addLine(torso, ra) end
-            if ll then addLine(torso, ll) end
-            if rl then addLine(torso, rl) end
-        end
-    end
-
-    -- Имя
-    local nameGui = Instance.new("BillboardGui")
-    nameGui.Adornee = char:FindFirstChild("Head")
-    nameGui.Size = UDim2.new(0, 100, 0, 18)
-    nameGui.StudsOffset = Vector3.new(0, 2.5, 0)
-    nameGui.Parent = folder
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 1, 0)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = plr.Name
-    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameLabel.TextScaled = true
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.Parent = nameGui
-
-    -- Здоровье
-    local healthGui = Instance.new("BillboardGui")
-    healthGui.Adornee = char:FindFirstChild("Head")
-    healthGui.Size = UDim2.new(0, 50, 0, 4)
-    healthGui.StudsOffset = Vector3.new(0, 2, 0)
-    healthGui.Parent = folder
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    bg.Parent = healthGui
-    local fill = Instance.new("Frame")
-    fill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-    fill.Size = UDim2.new(1, 0, 1, 0)
-    fill.Parent = bg
-
-    espObjects[plr] = {Folder = folder, Health = fill}
-end
-
--- ===== ОБНОВЛЕНИЕ ESP =====
 runService.RenderStepped:Connect(function()
     if esp then
-        for _, plr in ipairs(game.Players:GetPlayers()) do
-            if plr ~= player and plr.Character and not espObjects[plr] then
-                createESP(plr)
-            end
-        end
-        for plr, data in pairs(espObjects) do
-            if not plr.Character or not plr.Character.Parent then
-                data.Folder:Destroy()
-                espObjects[plr] = nil
-            else
-                local hum = plr.Character:FindFirstChild("Humanoid")
-                if hum then
-                    data.Health.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                if not highlights[p] then
+                    local h = Instance.new("Highlight")
+                    h.FillColor = Color3.fromRGB(255, 0, 0)
+                    h.FillTransparency = 0.5
+                    h.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    h.OutlineTransparency = 0.1
+                    h.DepthMode = wallhack and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
+                    h.Parent = p.Character
+                    highlights[p] = h
+
+                    p.CharacterAdded:Connect(function()
+                        if highlights[p] then
+                            highlights[p]:Destroy()
+                            highlights[p] = nil
+                        end
+                    end)
                 end
             end
         end
-    else
-        for _, data in pairs(espObjects) do
-            data.Folder:Destroy()
+
+        for p, h in pairs(highlights) do
+            if not p or not p.Character or not h.Parent then
+                if h then h:Destroy() end
+                highlights[p] = nil
+            end
         end
-        espObjects = {}
+    else
+        for _, h in pairs(highlights) do
+            if h then h:Destroy() end
+        end
+        highlights = {}
     end
 
     -- Круг FOV
@@ -428,11 +244,11 @@ runService.RenderStepped:Connect(function()
     fovCircle.Visible = aimbot
 end)
 
--- ===== AIMBOT (ПЛАВНЫЙ, С ВЫБОРОМ ЧАСТИ) =====
+-- ===== AIMBOT (НОВЫЙ, ПЛАВНЫЙ) =====
 local function getClosestPlayer()
     local closest, shortest = nil, fov
     local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-    
+
     for _, plr in ipairs(game.Players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
             local part = plr.Character:FindFirstChild(aimPart == "Head" and "Head" or "UpperTorso") or plr.Character:FindFirstChild(aimPart == "Head" and "Head" or "Torso")
@@ -444,9 +260,12 @@ local function getClosestPlayer()
                         local ok = true
                         if wallhack then
                             local camPos = camera.CFrame.Position
-                            local ray = Ray.new(camPos, part.Position - camPos)
-                            local hit = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
-                            if hit then ok = false end
+                            local direction = part.Position - camPos
+                            local ray = Ray.new(camPos, direction)
+                            local hit, hitPos = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
+                            if hit and (hitPos - camPos).Magnitude < direction.Magnitude then
+                                ok = false
+                            end
                         end
                         if ok then
                             shortest = dist
@@ -462,6 +281,7 @@ end
 
 runService.RenderStepped:Connect(function()
     if not aimbot then return end
+
     local target = getClosestPlayer()
     if target then
         local aimPartObj = target.Character:FindFirstChild(aimPart == "Head" and "Head" or "UpperTorso") or target.Character:FindFirstChild(aimPart == "Head" and "Head" or "Torso")
@@ -469,9 +289,12 @@ runService.RenderStepped:Connect(function()
             local aimPos = aimPartObj.Position
             local camPos = camera.CFrame.Position
             local direction = (aimPos - camPos).Unit
-            camera.CFrame = camera.CFrame:Lerp(CFrame.new(camPos, camPos + direction), smooth)
+            local targetCFrame = CFrame.new(camPos, camPos + direction)
+
+            -- Плавная наводка
+            camera.CFrame = camera.CFrame:Lerp(targetCFrame, smooth)
         end
     end
 end)
 
-print("DENWEN v2.0 загружен!")
+print("DENWEN v3.0 (Bdev Style) загружен!")
