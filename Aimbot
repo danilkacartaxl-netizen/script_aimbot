@@ -1,36 +1,233 @@
--- ==============================================
--- DENWEN v3.0 (Bdev Style + New Aimbot)
--- Старый дизайн, яркий ESP, плавный аимбот
--- ==============================================
+-- ===========================================================
+-- DENWEN ULTRA v4.0 (FULL PACK)
+-- ESP, Aimbot, TapFire, Fly, SpeedHack, Wallhack, Цвета
+-- ===========================================================
 
 local player = game.Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local mouse = player:GetMouse()
 local runService = game:GetService("RunService")
 local userInput = game:GetService("UserInputService")
+local players = game:GetService("Players")
 
--- ===== ПЕРЕМЕННЫЕ =====
-local aimbot = false
-local esp = false
-local wallhack = false
-local aimPart = "Head"  -- "Head" или "Torso"
-local fov = 250
-local smooth = 0.2
+-- ===== ВСЕ НАСТРОЙКИ (МЕНЯЮТСЯ ЧЕРЕЗ МЕНЮ) =====
+local settings = {
+    Aimbot = false,
+    ESP = false,
+    Wallhack = false,
+    TapFire = false,
+    Fly = false,
+    SpeedHack = false,
+    AimPart = "Head", -- "Head" или "Torso"
+    FOV = 250,
+    Smooth = 0.2,
+    SpeedMultiplier = 2, -- Во сколько раз быстрее бегать
+    FlySpeed = 50,
+    ESPColor = Color3.fromRGB(255, 0, 0), -- Красный по умолчанию
+    CircleColor = Color3.fromRGB(255, 0, 0), -- Красный по умолчанию
+}
 
--- ===== GUI (СТАРЫЙ СТИЛЬ, КАК В Bdev) =====
+-- ===== GUI (КРАСНО-ЧЁРНОЕ МЕНЮ) =====
 local gui = Instance.new("ScreenGui")
-gui.Name = "DENWEN"
+gui.Name = "DENWEN_ULTRA"
 gui.ResetOnSpawn = false
 gui.Parent = player.PlayerGui
 
--- Круг FOV (как в Bdev)
+-- Кнопка "D" (как в Bdev)
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0, 40, 0, 40)
+btn.Position = UDim2.new(0, 20, 0, 20)
+btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Text = "D"
+btn.Font = Enum.Font.SourceSansBold
+btn.TextSize = 28
+btn.BorderSizePixel = 2
+btn.BorderColor3 = Color3.fromRGB(200, 0, 0)
+btn.Parent = gui
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 12)
+btnCorner.Parent = btn
+
+-- Меню (чуть больше, чтобы всё влезло)
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 240, 0, 420)
+menu.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+menu.BorderSizePixel = 2
+menu.BorderColor3 = Color3.fromRGB(200, 0, 0)
+menu.Visible = false
+menu.Parent = gui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.Parent = menu
+
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "DENWEN ULTRA"
+title.TextColor3 = Color3.fromRGB(200, 0, 0)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = menu
+
+-- Кнопка закрытия
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -28, 0, 3)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(200, 0, 0)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = menu
+closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+-- Линия
+local line = Instance.new("Frame")
+line.Size = UDim2.new(0.9, 0, 0, 1)
+line.Position = UDim2.new(0.05, 0, 0, 35)
+line.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+line.BorderSizePixel = 0
+line.Parent = menu
+
+-- ===== ФУНКЦИЯ СОЗДАНИЯ ТОГГЛА =====
+local function createToggle(text, yPos, getter, setter)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 26)
+    frame.Position = UDim2.new(0.05, 0, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = menu
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.55, 0, 1, 0)
+    label.Position = UDim2.new(0.05, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 45, 0, 18)
+    btn.Position = UDim2.new(0.7, 0, 0.5, -9)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Text = getter() and "ON" or "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = frame
+
+    btn.MouseButton1Click:Connect(function()
+        local newState = not getter()
+        setter(newState)
+        btn.Text = newState and "ON" or "OFF"
+        btn.BackgroundColor3 = newState and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(50, 50, 50)
+    end)
+end
+
+-- ===== ВЫБОР ЦВЕТА (ESP и КРУГ) =====
+local colorOptions = {
+    {Color3.fromRGB(255, 0, 0), "КРАСНЫЙ"},
+    {Color3.fromRGB(0, 255, 0), "ЗЕЛЁНЫЙ"},
+    {Color3.fromRGB(0, 150, 255), "СИНИЙ"},
+    {Color3.fromRGB(255, 255, 0), "ЖЁЛТЫЙ"},
+    {Color3.fromRGB(255, 0, 255), "ФИОЛЕТ"},
+    {Color3.fromRGB(0, 255, 255), "БИРЮЗОВЫЙ"}
+}
+
+local function createColorPicker(text, yPos, setter)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 26)
+    frame.Position = UDim2.new(0.05, 0, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = menu
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0.05, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 60, 0, 18)
+    btn.Position = UDim2.new(0.65, 0, 0.5, -9)
+    btn.BackgroundColor3 = colorOptions[1][1]
+    btn.Text = ""
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = frame
+
+    local index = 1
+    btn.MouseButton1Click:Connect(function()
+        index = index % #colorOptions + 1
+        btn.BackgroundColor3 = colorOptions[index][1]
+        setter(colorOptions[index][1])
+    end)
+    return btn
+end
+
+-- ===== СОЗДАНИЕ ЭЛЕМЕНТОВ МЕНЮ =====
+createToggle("Aimbot", 45, function() return settings.Aimbot end, function(v) settings.Aimbot = v end)
+createToggle("ESP", 75, function() return settings.ESP end, function(v) settings.ESP = v end)
+createToggle("Wallhack", 105, function() return settings.Wallhack end, function(v) settings.Wallhack = v end)
+createToggle("TapFire", 135, function() return settings.TapFire end, function(v) settings.TapFire = v end)
+createToggle("Fly", 165, function() return settings.Fly end, function(v) settings.Fly = v end)
+createToggle("SpeedHack", 195, function() return settings.SpeedHack end, function(v) settings.SpeedHack = v end)
+
+createColorPicker("Цвет ESP", 225, function(color) settings.ESPColor = color end)
+createColorPicker("Цвет круга", 255, function(color) settings.CircleColor = color end)
+
+-- ===== FOV (текстовое поле) =====
+local fovLabel = Instance.new("TextLabel")
+fovLabel.Size = UDim2.new(0.5, 0, 0, 20)
+fovLabel.Position = UDim2.new(0.05, 0, 0, 290)
+fovLabel.BackgroundTransparency = 1
+fovLabel.Text = "FOV: " .. settings.FOV
+fovLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+fovLabel.TextScaled = true
+fovLabel.Font = Enum.Font.Gotham
+fovLabel.Parent = menu
+
+local fovBox = Instance.new("TextBox")
+fovBox.Size = UDim2.new(0.3, 0, 0, 20)
+fovBox.Position = UDim2.new(0.65, 0, 0, 290)
+fovBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+fovBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+fovBox.Text = tostring(settings.FOV)
+fovBox.TextScaled = true
+fovBox.Font = Enum.Font.GothamBold
+fovBox.Parent = menu
+fovBox.FocusLost:Connect(function()
+    local v = tonumber(fovBox.Text)
+    if v then
+        settings.FOV = math.clamp(v, 50, 500)
+        fovLabel.Text = "FOV: " .. settings.FOV
+        fovBox.Text = tostring(settings.FOV)
+    else
+        fovBox.Text = tostring(settings.FOV)
+    end
+end)
+
+-- ===== КРУГ FOV (ЦВЕТНОЙ) =====
 local fovCircle = Instance.new("Frame")
-fovCircle.Name = "FOVCircle"
 fovCircle.BackgroundTransparency = 1
 fovCircle.BorderSizePixel = 0
 fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-fovCircle.Size = UDim2.new(0, 900, 0, 900)
+fovCircle.Size = UDim2.new(0, 1, 0, 1)
 fovCircle.Visible = false
 fovCircle.Parent = gui
 
@@ -39,233 +236,186 @@ circleUI.CornerRadius = UDim.new(1, 0)
 circleUI.Parent = fovCircle
 
 local circleStroke = Instance.new("UIStroke")
-circleStroke.Color = Color3.fromRGB(255, 0, 0)
 circleStroke.Thickness = 3
 circleStroke.LineJoinMode = Enum.LineJoinMode.Round
 circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+circleStroke.Color = settings.CircleColor
 circleStroke.Parent = fovCircle
 
--- Кнопка "B"
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0, 40, 0, 40)
-btn.Position = UDim2.new(0, 50, 0, 50)
-btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-btn.Text = "B"
-btn.Font = Enum.Font.SourceSansBold
-btn.TextSize = 28
-btn.BorderSizePixel = 0
-btn.Parent = gui
+-- ===== ESP (ЯРКИЙ) =====
+local espObjects = {}
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 16)
-btnCorner.Parent = btn
+local function createESP(plr)
+    if espObjects[plr] or not plr.Character then return end
+    local char = plr.Character
+    local folder = Instance.new("Folder")
+    folder.Name = "DENWEN_ESP"
+    folder.Parent = char
 
--- Меню
-local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0, 280, 0, 270)
-menu.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-menu.BorderSizePixel = 0
-menu.Visible = false
-menu.Parent = gui
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = Vector3.new(3.5, 5.5, 1.5)
+    box.Adornee = char
+    box.Color3 = settings.ESPColor
+    box.Transparency = 0.1
+    box.AlwaysOnTop = settings.Wallhack
+    box.Parent = folder
 
-local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 16)
-menuCorner.Parent = menu
+    -- Имя
+    local nameGui = Instance.new("BillboardGui")
+    nameGui.Adornee = char:FindFirstChild("Head")
+    nameGui.Size = UDim2.new(0, 120, 0, 22)
+    nameGui.StudsOffset = Vector3.new(0, 2.8, 0)
+    nameGui.Parent = folder
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 1, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = plr.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextScaled = true
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Parent = nameGui
 
--- ===== ФУНКЦИЯ СОЗДАНИЯ КНОПОК =====
-local function makeToggle(name, y, def, callback)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 260, 0, 45)
-    b.Position = UDim2.new(0, 10, 0, y)
-    b.BackgroundColor3 = def and Color3.fromRGB(51, 51, 51) or Color3.fromRGB(25, 25, 25)
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Text = name .. ": " .. (def and "ON" or "OFF")
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 20
-    b.BorderSizePixel = 0
-    b.Parent = menu
+    -- Здоровье
+    local healthGui = Instance.new("BillboardGui")
+    healthGui.Adornee = char:FindFirstChild("Head")
+    healthGui.Size = UDim2.new(0, 60, 0, 6)
+    healthGui.StudsOffset = Vector3.new(0, 2.2, 0)
+    healthGui.Parent = folder
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    bg.Parent = healthGui
+    local fill = Instance.new("Frame")
+    fill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    fill.Size = UDim2.new(1, 0, 1, 0)
+    fill.Parent = bg
 
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 10)
-    c.Parent = b
-
-    b.MouseButton1Click:Connect(function()
-        def = not def
-        b.BackgroundColor3 = def and Color3.fromRGB(51, 51, 51) or Color3.fromRGB(25, 25, 25)
-        b.Text = name .. ": " .. (def and "ON" or "OFF")
-        if callback then callback(def) end
-    end)
-    return b
+    espObjects[plr] = {Folder = folder, Health = fill}
 end
 
--- ===== FOV (ввод числа) =====
-local label = Instance.new("TextLabel")
-label.Size = UDim2.new(0, 260, 0, 25)
-label.Position = UDim2.new(0, 10, 0, 175)
-label.Text = "FOV: " .. math.floor(fov)
-label.TextColor3 = Color3.fromRGB(255, 255, 255)
-label.BackgroundTransparency = 1
-label.Font = Enum.Font.SourceSansBold
-label.TextSize = 20
-label.Parent = menu
-
-local box = Instance.new("TextBox")
-box.Size = UDim2.new(0, 260, 0, 40)
-box.Position = UDim2.new(0, 10, 0, 203)
-box.Text = tostring(math.floor(fov))
-box.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
-box.TextColor3 = Color3.fromRGB(255, 255, 255)
-box.Font = Enum.Font.SourceSansBold
-box.TextSize = 20
-box.ClearTextOnFocus = false
-box.Parent = menu
-
-local boxCorner = Instance.new("UICorner")
-boxCorner.CornerRadius = UDim.new(0, 10)
-boxCorner.Parent = box
-
-box.FocusLost:Connect(function()
-    local v = tonumber(box.Text)
-    if v then
-        fov = math.clamp(v, 50, 500)
-        label.Text = "FOV: " .. math.floor(fov)
-        box.Text = tostring(math.floor(fov))
-    else
-        box.Text = tostring(math.floor(fov))
+-- ===== SPEEDHACK =====
+local function applySpeedHack()
+    if settings.SpeedHack then
+        local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+        if hum then
+            hum.WalkSpeed = 16 * settings.SpeedMultiplier
+        end
     end
+end
+
+-- ===== FLY =====
+local flyBodyVel = nil
+local flyBodyGyro = nil
+local flyEnabled = false
+
+local function startFly()
+    local char = player.Character
+    if not char then return end
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+    if not torso then return end
+
+    flyBodyVel = Instance.new("BodyVelocity")
+    flyBodyVel.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    flyBodyVel.Velocity = Vector3.new(0, 0, 0)
+    flyBodyVel.Parent = torso
+
+    flyBodyGyro = Instance.new("BodyGyro")
+    flyBodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+    flyBodyGyro.P = 1e9
+    flyBodyGyro.CFrame = torso.CFrame
+    flyBodyGyro.Parent = torso
+
+    flyEnabled = true
+    player.Character.Humanoid.PlatformStand = true
+end
+
+local function stopFly()
+    if flyBodyVel then flyBodyVel:Destroy() flyBodyVel = nil end
+    if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
+    flyEnabled = false
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.PlatformStand = false
+    end
+end
+
+-- Управление полётом (WASD + пробел + Shift)
+userInput.InputBegan:Connect(function(input, isTyping)
+    if isTyping or not flyEnabled then return end
+    local speed = settings.FlySpeed
+    local vel = Vector3.new(0, 0, 0)
+    if input.KeyCode == Enum.KeyCode.W then vel = vel + camera.CFrame.LookVector * speed end
+    if input.KeyCode == Enum.KeyCode.S then vel = vel - camera.CFrame.LookVector * speed end
+    if input.KeyCode == Enum.KeyCode.A then vel = vel - camera.CFrame.RightVector * speed end
+    if input.KeyCode == Enum.KeyCode.D then vel = vel + camera.CFrame.RightVector * speed end
+    if input.KeyCode == Enum.KeyCode.Space then vel = vel + Vector3.new(0, speed, 0) end
+    if input.KeyCode == Enum.KeyCode.LeftShift then vel = vel - Vector3.new(0, speed, 0) end
+    if flyBodyVel then flyBodyVel.Velocity = vel end
 end)
 
--- ===== КНОПКИ =====
-makeToggle("Aimbot", 10, aimbot, function(v) aimbot = v end)
-makeToggle("ESP", 65, esp, function(v) esp = v end)
-makeToggle("Wallhack", 120, wallhack, function(v) wallhack = v end)
+-- ===== ОБНОВЛЕНИЕ ВСЕГО (КАЖДЫЙ КАДР) =====
+runService.RenderStepped:Connect(function()
+    -- FOV круг
+    local circleSize = settings.FOV * 2
+    fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
+    fovCircle.Visible = settings.Aimbot
+    circleStroke.Color = settings.CircleColor
 
--- ===== ПЕРЕТАСКИВАНИЕ КНОПКИ (как в Bdev) =====
-local dragging = false
-local dragStart
-local startPos
+    -- SpeedHack
+    applySpeedHack()
 
-btn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = btn.Position
-        userInput.MouseIconEnabled = false
+    -- Fly (включение/выключение через меню)
+    if settings.Fly and not flyEnabled then
+        startFly()
+    elseif not settings.Fly and flyEnabled then
+        stopFly()
     end
-end)
 
-btn.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
-        dragging = false
-        userInput.MouseIconEnabled = true
-    end
-end)
-
-userInput.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        btn.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
-
-        if menu.Visible then
-            local absX = btn.AbsolutePosition.X
-            local screenW = camera.ViewportSize.X
-            local menuW = menu.AbsoluteSize.X
-
-            if absX < screenW / 2 then
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 65, 0, btn.AbsolutePosition.Y)
-            else
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
+    -- ESP (создание и обновление)
+    if settings.ESP then
+        for _, plr in ipairs(players:GetPlayers()) do
+            if plr ~= player and plr.Character and not espObjects[plr] then
+                createESP(plr)
             end
         end
-    end
-end)
-
-btn.MouseButton1Click:Connect(function()
-    menu.Visible = not menu.Visible
-    if menu.Visible then
-        local absX = btn.AbsolutePosition.X
-        local screenW = camera.ViewportSize.X
-        local menuW = menu.AbsoluteSize.X
-        if absX < screenW / 2 then
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 65, 0, btn.AbsolutePosition.Y)
-        else
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
-        end
-    end
-end)
-
--- ===== ESP (ЯРКИЙ, СТАРЫЙ, ЧЕРЕЗ HIGHLIGHT) =====
-local highlights = {}
-
-runService.RenderStepped:Connect(function()
-    if esp then
-        for _, p in ipairs(game.Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                if not highlights[p] then
-                    local h = Instance.new("Highlight")
-                    h.FillColor = Color3.fromRGB(255, 0, 0)
-                    h.FillTransparency = 0.5
-                    h.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    h.OutlineTransparency = 0.1
-                    h.DepthMode = wallhack and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
-                    h.Parent = p.Character
-                    highlights[p] = h
-
-                    p.CharacterAdded:Connect(function()
-                        if highlights[p] then
-                            highlights[p]:Destroy()
-                            highlights[p] = nil
-                        end
-                    end)
+        for plr, data in pairs(espObjects) do
+            if not plr.Character or not plr.Character.Parent then
+                data.Folder:Destroy()
+                espObjects[plr] = nil
+            else
+                local hum = plr.Character:FindFirstChild("Humanoid")
+                if hum then
+                    data.Health.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
                 end
             end
         end
-
-        for p, h in pairs(highlights) do
-            if not p or not p.Character or not h.Parent then
-                if h then h:Destroy() end
-                highlights[p] = nil
-            end
-        end
     else
-        for _, h in pairs(highlights) do
-            if h then h:Destroy() end
+        for _, data in pairs(espObjects) do
+            data.Folder:Destroy()
         end
-        highlights = {}
+        espObjects = {}
     end
-
-    -- Круг FOV
-    local circleSize = fov * 2
-    fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
-    fovCircle.Visible = aimbot
 end)
 
--- ===== AIMBOT (НОВЫЙ, ПЛАВНЫЙ) =====
+-- ===== AIMBOT =====
 local function getClosestPlayer()
-    local closest, shortest = nil, fov
+    local closest, shortest = nil, settings.FOV
     local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 
-    for _, plr in ipairs(game.Players:GetPlayers()) do
+    for _, plr in ipairs(players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            local part = plr.Character:FindFirstChild(aimPart == "Head" and "Head" or "UpperTorso") or plr.Character:FindFirstChild(aimPart == "Head" and "Head" or "Torso")
+            local part = plr.Character:FindFirstChild(settings.AimPart == "Head" and "Head" or "UpperTorso") or plr.Character:FindFirstChild(settings.AimPart == "Head" and "Head" or "Torso")
             if part then
                 local pos, onScreen = camera:WorldToViewportPoint(part.Position)
                 if onScreen and pos.Z > 0 then
                     local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
                     if dist < shortest then
                         local ok = true
-                        if wallhack then
+                        if settings.Wallhack then
                             local camPos = camera.CFrame.Position
                             local direction = part.Position - camPos
                             local ray = Ray.new(camPos, direction)
-                            local hit, hitPos = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
-                            if hit and (hitPos - camPos).Magnitude < direction.Magnitude then
-                                ok = false
-                            end
+                            local hit = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
+                            if hit then ok = false end
                         end
                         if ok then
                             shortest = dist
@@ -280,21 +430,37 @@ local function getClosestPlayer()
 end
 
 runService.RenderStepped:Connect(function()
-    if not aimbot then return end
+    if not settings.Aimbot then return end
 
     local target = getClosestPlayer()
     if target then
-        local aimPartObj = target.Character:FindFirstChild(aimPart == "Head" and "Head" or "UpperTorso") or target.Character:FindFirstChild(aimPart == "Head" and "Head" or "Torso")
+        local aimPartObj = target.Character:FindFirstChild(settings.AimPart == "Head" and "Head" or "UpperTorso") or target.Character:FindFirstChild(settings.AimPart == "Head" and "Head" or "Torso")
         if aimPartObj then
             local aimPos = aimPartObj.Position
             local camPos = camera.CFrame.Position
             local direction = (aimPos - camPos).Unit
             local targetCFrame = CFrame.new(camPos, camPos + direction)
+            camera.CFrame = camera.CFrame:Lerp(targetCFrame, settings.Smooth)
 
-            -- Плавная наводка
-            camera.CFrame = camera.CFrame:Lerp(targetCFrame, smooth)
+            -- TAP FIRE
+            if settings.TapFire then
+                local args = {
+                    target.Character,
+                    aimPartObj.Position,
+                    "Auto"
+                }
+                -- Имитация клика (если игра использует RemoteEvent)
+                -- ВНИМАНИЕ: конкретные названия событий зависят от игры!
+                local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Fire")
+                if remote then
+                    remote:FireServer(unpack(args))
+                else
+                    -- Если нет RemoteEvent, просто имитируем нажатие мыши
+                    mouse1click()
+                end
+            end
         end
     end
 end)
 
-print("DENWEN v3.0 (Bdev Style) загружен!")
+print("DENWEN ULTRA v4.0 загружен!")
