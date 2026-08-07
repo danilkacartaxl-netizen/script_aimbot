@@ -1,6 +1,6 @@
 -- ===========================================================
--- DENWEN ULTRA v4.0 (FULL PACK)
--- ESP, Aimbot, TapFire, Fly, SpeedHack, Wallhack, Цвета
+-- DENWEN ULTRA v4.0 (FIXED)
+-- Исправлено: открытие меню, все функции, дизайн
 -- ===========================================================
 
 local player = game.Players.LocalPlayer
@@ -10,7 +10,7 @@ local runService = game:GetService("RunService")
 local userInput = game:GetService("UserInputService")
 local players = game:GetService("Players")
 
--- ===== ВСЕ НАСТРОЙКИ (МЕНЯЮТСЯ ЧЕРЕЗ МЕНЮ) =====
+-- ===== НАСТРОЙКИ =====
 local settings = {
     Aimbot = false,
     ESP = false,
@@ -18,30 +18,30 @@ local settings = {
     TapFire = false,
     Fly = false,
     SpeedHack = false,
-    AimPart = "Head", -- "Head" или "Torso"
+    AimPart = "Head",
     FOV = 250,
     Smooth = 0.2,
-    SpeedMultiplier = 2, -- Во сколько раз быстрее бегать
+    SpeedMultiplier = 2,
     FlySpeed = 50,
-    ESPColor = Color3.fromRGB(255, 0, 0), -- Красный по умолчанию
-    CircleColor = Color3.fromRGB(255, 0, 0), -- Красный по умолчанию
+    ESPColor = Color3.fromRGB(255, 0, 0),
+    CircleColor = Color3.fromRGB(255, 0, 0),
 }
 
--- ===== GUI (КРАСНО-ЧЁРНОЕ МЕНЮ) =====
+-- ===== GUI =====
 local gui = Instance.new("ScreenGui")
 gui.Name = "DENWEN_ULTRA"
 gui.ResetOnSpawn = false
 gui.Parent = player.PlayerGui
 
--- Кнопка "D" (как в Bdev)
+-- Кнопка "D"
 local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0, 40, 0, 40)
+btn.Size = UDim2.new(0, 44, 0, 44)
 btn.Position = UDim2.new(0, 20, 0, 20)
 btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 btn.Text = "D"
 btn.Font = Enum.Font.SourceSansBold
-btn.TextSize = 28
+btn.TextSize = 30
 btn.BorderSizePixel = 2
 btn.BorderColor3 = Color3.fromRGB(200, 0, 0)
 btn.Parent = gui
@@ -50,7 +50,7 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 12)
 btnCorner.Parent = btn
 
--- Меню (чуть больше, чтобы всё влезло)
+-- Меню
 local menu = Instance.new("Frame")
 menu.Size = UDim2.new(0, 240, 0, 420)
 menu.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
@@ -65,7 +65,7 @@ menuCorner.Parent = menu
 
 -- Заголовок
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, 0, 0, 35)
 title.BackgroundTransparency = 1
 title.Text = "DENWEN ULTRA"
 title.TextColor3 = Color3.fromRGB(200, 0, 0)
@@ -75,8 +75,8 @@ title.Parent = menu
 
 -- Кнопка закрытия
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 24, 0, 24)
-closeBtn.Position = UDim2.new(1, -28, 0, 3)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.Position = UDim2.new(1, -34, 0, 4)
 closeBtn.BackgroundTransparency = 1
 closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.fromRGB(200, 0, 0)
@@ -88,40 +88,82 @@ closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
 -- Линия
 local line = Instance.new("Frame")
 line.Size = UDim2.new(0.9, 0, 0, 1)
-line.Position = UDim2.new(0.05, 0, 0, 35)
+line.Position = UDim2.new(0.05, 0, 0, 40)
 line.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 line.BorderSizePixel = 0
 line.Parent = menu
 
+-- ===== ОТКРЫТИЕ МЕНЮ ПО КНОПКЕ "D" =====
+btn.MouseButton1Click:Connect(function()
+    menu.Visible = not menu.Visible
+end)
+
+-- ===== ДВИЖЕНИЕ КНОПКИ =====
+local dragging = false
+local dragStart
+local startPos
+
+btn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = btn.Position
+        userInput.MouseIconEnabled = false
+    end
+end)
+
+btn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
+        dragging = false
+        userInput.MouseIconEnabled = true
+    end
+end)
+
+userInput.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        btn.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
 -- ===== ФУНКЦИЯ СОЗДАНИЯ ТОГГЛА =====
 local function createToggle(text, yPos, getter, setter)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.9, 0, 0, 26)
+    frame.Size = UDim2.new(0.9, 0, 0, 28)
     frame.Position = UDim2.new(0.05, 0, 0, yPos)
     frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.BorderSizePixel = 0
     frame.Parent = menu
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 6)
+    frameCorner.Parent = frame
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.55, 0, 1, 0)
     label.Position = UDim2.new(0.05, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.TextScaled = true
     label.Font = Enum.Font.Gotham
     label.Parent = frame
 
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 45, 0, 18)
-    btn.Position = UDim2.new(0.7, 0, 0.5, -9)
+    btn.Size = UDim2.new(0, 50, 0, 20)
+    btn.Position = UDim2.new(0.7, 0, 0.5, -10)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.Text = getter() and "ON" or "OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextScaled = true
     btn.Font = Enum.Font.GothamBold
     btn.Parent = frame
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
         local newState = not getter()
@@ -131,7 +173,7 @@ local function createToggle(text, yPos, getter, setter)
     end)
 end
 
--- ===== ВЫБОР ЦВЕТА (ESP и КРУГ) =====
+-- ===== ВЫБОР ЦВЕТА =====
 local colorOptions = {
     {Color3.fromRGB(255, 0, 0), "КРАСНЫЙ"},
     {Color3.fromRGB(0, 255, 0), "ЗЕЛЁНЫЙ"},
@@ -143,32 +185,38 @@ local colorOptions = {
 
 local function createColorPicker(text, yPos, setter)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.9, 0, 0, 26)
+    frame.Size = UDim2.new(0.9, 0, 0, 28)
     frame.Position = UDim2.new(0.05, 0, 0, yPos)
     frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.BorderSizePixel = 0
     frame.Parent = menu
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 6)
+    frameCorner.Parent = frame
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.5, 0, 1, 0)
     label.Position = UDim2.new(0.05, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.TextScaled = true
     label.Font = Enum.Font.Gotham
     label.Parent = frame
 
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 60, 0, 18)
-    btn.Position = UDim2.new(0.65, 0, 0.5, -9)
+    btn.Size = UDim2.new(0, 60, 0, 20)
+    btn.Position = UDim2.new(0.65, 0, 0.5, -10)
     btn.BackgroundColor3 = colorOptions[1][1]
     btn.Text = ""
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextScaled = true
     btn.Font = Enum.Font.GothamBold
     btn.Parent = frame
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
 
     local index = 1
     btn.MouseButton1Click:Connect(function()
@@ -176,24 +224,23 @@ local function createColorPicker(text, yPos, setter)
         btn.BackgroundColor3 = colorOptions[index][1]
         setter(colorOptions[index][1])
     end)
-    return btn
 end
 
 -- ===== СОЗДАНИЕ ЭЛЕМЕНТОВ МЕНЮ =====
-createToggle("Aimbot", 45, function() return settings.Aimbot end, function(v) settings.Aimbot = v end)
-createToggle("ESP", 75, function() return settings.ESP end, function(v) settings.ESP = v end)
-createToggle("Wallhack", 105, function() return settings.Wallhack end, function(v) settings.Wallhack = v end)
-createToggle("TapFire", 135, function() return settings.TapFire end, function(v) settings.TapFire = v end)
-createToggle("Fly", 165, function() return settings.Fly end, function(v) settings.Fly = v end)
-createToggle("SpeedHack", 195, function() return settings.SpeedHack end, function(v) settings.SpeedHack = v end)
+createToggle("Aimbot", 50, function() return settings.Aimbot end, function(v) settings.Aimbot = v end)
+createToggle("ESP", 82, function() return settings.ESP end, function(v) settings.ESP = v end)
+createToggle("Wallhack", 114, function() return settings.Wallhack end, function(v) settings.Wallhack = v end)
+createToggle("TapFire", 146, function() return settings.TapFire end, function(v) settings.TapFire = v end)
+createToggle("Fly", 178, function() return settings.Fly end, function(v) settings.Fly = v end)
+createToggle("SpeedHack", 210, function() return settings.SpeedHack end, function(v) settings.SpeedHack = v end)
 
-createColorPicker("Цвет ESP", 225, function(color) settings.ESPColor = color end)
-createColorPicker("Цвет круга", 255, function(color) settings.CircleColor = color end)
+createColorPicker("Цвет ESP", 245, function(color) settings.ESPColor = color end)
+createColorPicker("Цвет круга", 277, function(color) settings.CircleColor = color end)
 
--- ===== FOV (текстовое поле) =====
+-- ===== FOV =====
 local fovLabel = Instance.new("TextLabel")
-fovLabel.Size = UDim2.new(0.5, 0, 0, 20)
-fovLabel.Position = UDim2.new(0.05, 0, 0, 290)
+fovLabel.Size = UDim2.new(0.5, 0, 0, 22)
+fovLabel.Position = UDim2.new(0.05, 0, 0, 312)
 fovLabel.BackgroundTransparency = 1
 fovLabel.Text = "FOV: " .. settings.FOV
 fovLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -202,14 +249,18 @@ fovLabel.Font = Enum.Font.Gotham
 fovLabel.Parent = menu
 
 local fovBox = Instance.new("TextBox")
-fovBox.Size = UDim2.new(0.3, 0, 0, 20)
-fovBox.Position = UDim2.new(0.65, 0, 0, 290)
+fovBox.Size = UDim2.new(0.3, 0, 0, 22)
+fovBox.Position = UDim2.new(0.65, 0, 0, 312)
 fovBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 fovBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 fovBox.Text = tostring(settings.FOV)
 fovBox.TextScaled = true
 fovBox.Font = Enum.Font.GothamBold
 fovBox.Parent = menu
+local fovCorner = Instance.new("UICorner")
+fovCorner.CornerRadius = UDim.new(0, 4)
+fovCorner.Parent = fovBox
+
 fovBox.FocusLost:Connect(function()
     local v = tonumber(fovBox.Text)
     if v then
@@ -221,7 +272,7 @@ fovBox.FocusLost:Connect(function()
     end
 end)
 
--- ===== КРУГ FOV (ЦВЕТНОЙ) =====
+-- ===== КРУГ FOV =====
 local fovCircle = Instance.new("Frame")
 fovCircle.BackgroundTransparency = 1
 fovCircle.BorderSizePixel = 0
@@ -260,7 +311,6 @@ local function createESP(plr)
     box.AlwaysOnTop = settings.Wallhack
     box.Parent = folder
 
-    -- Имя
     local nameGui = Instance.new("BillboardGui")
     nameGui.Adornee = char:FindFirstChild("Head")
     nameGui.Size = UDim2.new(0, 120, 0, 22)
@@ -275,7 +325,6 @@ local function createESP(plr)
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.Parent = nameGui
 
-    -- Здоровье
     local healthGui = Instance.new("BillboardGui")
     healthGui.Adornee = char:FindFirstChild("Head")
     healthGui.Size = UDim2.new(0, 60, 0, 6)
@@ -338,7 +387,6 @@ local function stopFly()
     end
 end
 
--- Управление полётом (WASD + пробел + Shift)
 userInput.InputBegan:Connect(function(input, isTyping)
     if isTyping or not flyEnabled then return end
     local speed = settings.FlySpeed
@@ -352,25 +400,21 @@ userInput.InputBegan:Connect(function(input, isTyping)
     if flyBodyVel then flyBodyVel.Velocity = vel end
 end)
 
--- ===== ОБНОВЛЕНИЕ ВСЕГО (КАЖДЫЙ КАДР) =====
+-- ===== ОБНОВЛЕНИЕ ВСЕГО =====
 runService.RenderStepped:Connect(function()
-    -- FOV круг
     local circleSize = settings.FOV * 2
     fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
     fovCircle.Visible = settings.Aimbot
     circleStroke.Color = settings.CircleColor
 
-    -- SpeedHack
     applySpeedHack()
 
-    -- Fly (включение/выключение через меню)
     if settings.Fly and not flyEnabled then
         startFly()
     elseif not settings.Fly and flyEnabled then
         stopFly()
     end
 
-    -- ESP (создание и обновление)
     if settings.ESP then
         for _, plr in ipairs(players:GetPlayers()) do
             if plr ~= player and plr.Character and not espObjects[plr] then
@@ -396,7 +440,7 @@ runService.RenderStepped:Connect(function()
     end
 end)
 
--- ===== AIMBOT =====
+-- ===== AIMBOT + TAP FIRE =====
 local function getClosestPlayer()
     local closest, shortest = nil, settings.FOV
     local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
@@ -410,7 +454,7 @@ local function getClosestPlayer()
                     local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
                     if dist < shortest then
                         local ok = true
-                        if settings.Wallhack then
+                        if not settings.Wallhack then
                             local camPos = camera.CFrame.Position
                             local direction = part.Position - camPos
                             local ray = Ray.new(camPos, direction)
@@ -442,22 +486,9 @@ runService.RenderStepped:Connect(function()
             local targetCFrame = CFrame.new(camPos, camPos + direction)
             camera.CFrame = camera.CFrame:Lerp(targetCFrame, settings.Smooth)
 
-            -- TAP FIRE
             if settings.TapFire then
-                local args = {
-                    target.Character,
-                    aimPartObj.Position,
-                    "Auto"
-                }
-                -- Имитация клика (если игра использует RemoteEvent)
-                -- ВНИМАНИЕ: конкретные названия событий зависят от игры!
-                local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Fire")
-                if remote then
-                    remote:FireServer(unpack(args))
-                else
-                    -- Если нет RemoteEvent, просто имитируем нажатие мыши
-                    mouse1click()
-                end
+                -- Имитация клика мыши
+                mouse1click()
             end
         end
     end
