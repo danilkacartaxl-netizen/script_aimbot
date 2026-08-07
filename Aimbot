@@ -1,5 +1,5 @@
 -- ==============================================
--- SWILL MM2 (Murder Mystery 2)
+-- SWILL MM2 (Murder Mystery 2) FULL
 -- ESP: Green = Innocent, Red = Murderer, Blue = Sheriff
 -- Weapon Highlight (оружие на земле и в руках)
 -- Aimbot (только на Murderer и Sheriff)
@@ -14,14 +14,14 @@ local rs = game:GetService("RunService")
 local uis = game:GetService("UserInputService")
 local players = game:GetService("Players")
 
--- Создаём GUI
+-- GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "SWILL_MM2"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = plr.PlayerGui
 
--- ===== КРУГ FOV =====
+-- FOV Circle
 local fovCircle = Instance.new("Frame")
 fovCircle.Name = "FOVCircle"
 fovCircle.BackgroundTransparency = 1
@@ -43,7 +43,7 @@ circleStroke.LineJoinMode = Enum.LineJoinMode.Round
 circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 circleStroke.Parent = fovCircle
 
--- ===== КНОПКА МЕНЮ =====
+-- Menu Button
 local btn = Instance.new("TextButton")
 btn.Size = UDim2.new(0, 34, 0, 34)
 btn.Position = UDim2.new(0, 14, 0, 14)
@@ -59,7 +59,7 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 10)
 btnCorner.Parent = btn
 
--- ===== МЕНЮ =====
+-- Menu Frame
 local menu = Instance.new("Frame")
 menu.Size = UDim2.new(0, 190, 0, 250)
 menu.BackgroundColor3 = Color3.new(0.06, 0.06, 0.06)
@@ -72,7 +72,7 @@ local menuCorner = Instance.new("UICorner")
 menuCorner.CornerRadius = UDim.new(0, 10)
 menuCorner.Parent = menu
 
--- ===== РАЗДЕЛИТЕЛИ =====
+-- Separators
 local function addSeparator(y, text)
     local sep = Instance.new("TextLabel")
     sep.Size = UDim2.new(0, 170, 0, 14)
@@ -87,7 +87,7 @@ local function addSeparator(y, text)
     return sep
 end
 
--- ===== ПЕРЕМЕННЫЕ =====
+-- Variables
 local aim = false
 local esp = false
 local weaponEsp = false
@@ -97,15 +97,14 @@ local fovSize = 45
 
 local highlights = {}
 local weaponHighlights = {}
-local green = Color3.new(0, 1, 0.2)    -- Мирный
-local red = Color3.new(1, 0.15, 0.15)  -- Мардер
-local blue = Color3.new(0.2, 0.4, 1)   -- Шериф
+local green = Color3.new(0, 1, 0.2)
+local red = Color3.new(1, 0.15, 0.15)
+local blue = Color3.new(0.2, 0.4, 1)
 
--- ===== ОПРЕДЕЛЕНИЕ РОЛИ В MM2 =====
+-- ROLE DETECTION
 local function getRole(player)
     if not player or not player.Character then return "Innocent" end
     
-    -- Проверяем по имени (для демонстрации)
     local name = player.Name:lower()
     if name:find("murderer") or name:find("мардер") or name:find("kill") then
         return "Murderer"
@@ -113,36 +112,28 @@ local function getRole(player)
         return "Sheriff"
     end
     
-    -- Проверяем через теги (если есть)
     if player:FindFirstChild("Role") then
         return player.Role.Value
     end
     
-    -- Проверяем через папку игроков в workspace (часто в MM2)
     for _, child in ipairs(ws:GetChildren()) do
         if child.Name == player.Name and child:FindFirstChild("Role") then
             return child.Role.Value
         end
     end
     
-    -- Проверяем через оружие в руках
     if player.Character then
         local tool = player.Character:FindFirstChildOfClass("Tool")
         if tool then
             local toolName = tool.Name:lower()
-            if toolName:find("knife") or toolName:find("gun") or toolName:find("blade") then
-                -- Если у игрока есть оружие, это может быть мардер или шериф
-                -- Дополнительная проверка: у мардера обычно нож, у шерифа пистолет
-                if toolName:find("knife") or toolName:find("blade") or toolName:find("dagger") then
-                    return "Murderer"
-                elseif toolName:find("gun") or toolName:find("pistol") or toolName:find("shoot") then
-                    return "Sheriff"
-                end
+            if toolName:find("knife") or toolName:find("blade") or toolName:find("dagger") then
+                return "Murderer"
+            elseif toolName:find("gun") or toolName:find("pistol") or toolName:find("shoot") then
+                return "Sheriff"
             end
         end
     end
     
-    -- По умолчанию мирный
     return "Innocent"
 end
 
@@ -151,21 +142,17 @@ local function isEnemy(player)
     local myRole = getRole(plr)
     local theirRole = getRole(player)
     
-    -- Если мы мардер - враги все (кроме мардеров)
     if myRole == "Murderer" then
         return theirRole ~= "Murderer"
     end
     
-    -- Если мы шериф - враги только мардеры
     if myRole == "Sheriff" then
         return theirRole == "Murderer"
     end
     
-    -- Если мы мирный - враги только мардеры
     return theirRole == "Murderer"
 end
 
--- ===== ЦВЕТ ДЛЯ ESP =====
 local function getRoleColor(player)
     local role = getRole(player)
     if role == "Murderer" then
@@ -177,7 +164,7 @@ local function getRoleColor(player)
     end
 end
 
--- ===== СОЗДАНИЕ КНОПОК =====
+-- Toggle Buttons
 local function makeToggle(name, y, def, callback)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(0, 170, 0, 24)
@@ -203,7 +190,7 @@ local function makeToggle(name, y, def, callback)
     return b
 end
 
--- ===== МЕНЮ =====
+-- Menu Items
 addSeparator(2, "── AIM ──")
 makeToggle("Aimbot", 18, aim, function(v) aim = v end)
 
@@ -217,7 +204,7 @@ makeToggle("AutoKill", 138, autoKill, function(v) autoKill = v end)
 addSeparator(168, "── MOVE ──")
 makeToggle("NoClip", 184, noClip, function(v) noClip = v end)
 
--- ===== FOV =====
+-- FOV Size
 local fovLabel = Instance.new("TextLabel")
 fovLabel.Size = UDim2.new(0, 70, 0, 16)
 fovLabel.Position = UDim2.new(0, 10, 0, 220)
@@ -254,7 +241,7 @@ fovBox.FocusLost:Connect(function()
     end
 end)
 
--- ===== ПЕРЕТАСКИВАНИЕ =====
+-- Dragging
 local dragging = false
 local dragStart, startPos
 
@@ -313,7 +300,7 @@ uis.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.D or input.KeyCode == Enum.KeyCode.B then toggleMenu() end
 end)
 
--- ===== NoClip =====
+-- NoClip
 local function setNoClip(enabled)
     if not plr.Character then return end
     for _, part in ipairs(plr.Character:GetDescendants()) do
@@ -323,9 +310,8 @@ local function setNoClip(enabled)
     end
 end
 
--- ===== ПОДСВЕТКА ОРУЖИЯ =====
+-- Weapon ESP
 local function updateWeaponESP()
-    -- Очищаем старые подсветки
     for _, h in pairs(weaponHighlights) do
         if h then h:Destroy() end
     end
@@ -333,13 +319,12 @@ local function updateWeaponESP()
     
     if not weaponEsp then return end
     
-    -- Ищем оружие на земле
     for _, item in ipairs(ws:GetDescendants()) do
         if item:IsA("Tool") and item.Parent ~= plr.Character then
             local handle = item:FindFirstChild("Handle")
             if handle then
                 local h = Instance.new("Highlight")
-                h.FillColor = Color3.new(1, 0.8, 0) -- Золотой цвет для оружия
+                h.FillColor = Color3.new(1, 0.8, 0)
                 h.FillTransparency = 0.3
                 h.OutlineColor = Color3.new(1, 1, 1)
                 h.OutlineTransparency = 0.2
@@ -350,7 +335,6 @@ local function updateWeaponESP()
         end
     end
     
-    -- Ищем оружие в руках у других игроков
     for _, player in ipairs(players:GetPlayers()) do
         if player ~= plr and player.Character then
             local tool = player.Character:FindFirstChildOfClass("Tool")
@@ -371,7 +355,7 @@ local function updateWeaponESP()
     end
 end
 
--- ===== AUTOKILL (только для мардера) =====
+-- AutoKill (only for Murderer)
 local function autoKillAll()
     if getRole(plr) ~= "Murderer" then 
         return 
@@ -398,9 +382,8 @@ local function autoKillAll()
     end
 end
 
--- ===== ГЛАВНЫЙ ЦИКЛ =====
+-- Main Loop
 rs.RenderStepped:Connect(function()
-    -- NoClip
     setNoClip(noClip)
     
     -- ESP
@@ -440,7 +423,7 @@ rs.RenderStepped:Connect(function()
         highlights = {}
     end
     
-    -- Weapon ESP (обновляем раз в 10 кадров для производительности)
+    -- Weapon ESP
     if weaponEsp then
         updateWeaponESP()
     else
@@ -450,7 +433,7 @@ rs.RenderStepped:Connect(function()
         weaponHighlights = {}
     end
     
-    -- AutoKill (только для мардера)
+    -- AutoKill
     if autoKill then
         autoKillAll()
     end
@@ -485,13 +468,13 @@ rs.RenderStepped:Connect(function()
         end
     end
     
-    -- КРУГ FOV
+    -- FOV Circle
     local circleSize = fovSize * 2
     fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
     fovCircle.Visible = aim
 end)
 
-print("SWILL MM2 loaded!")
+print("SWILL MM2 FULL loaded!")
 print("ESP: Green = Innocent, Red = Murderer, Blue = Sheriff")
 print("Weapon ESP: Golden weapons")
 print("AutoKill: ONLY for Murderer")
