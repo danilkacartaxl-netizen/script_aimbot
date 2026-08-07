@@ -1,9 +1,9 @@
 -- ==============================================
--- SWILL Duels Pro (Autofire + Wallbang)
--- ESP: Green = Ally, Red = Enemy
--- Aimbot + Autofire only vs enemies
--- Wallbang = shoot through walls
--- Menu: B or D
+-- SWILL Duels (Murderer vs Sheriff)
+-- ESP: Green = Team, Red = Enemy
+-- Aimbot + Autofire (автострельба по врагам)
+-- Wallbang (стрельба сквозь стены)
+-- Menu: B или D (кнопка SW)
 -- ==============================================
 
 local plr = game.Players.LocalPlayer
@@ -12,22 +12,21 @@ local cam = ws.CurrentCamera
 local rs = game:GetService("RunService")
 local uis = game:GetService("UserInputService")
 local players = game:GetService("Players")
-local mouse = plr:GetMouse()
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "SWILL_Pro"
+gui.Name = "SWILL_Duels"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = plr.PlayerGui
 
--- ===== КРУГ FOV (красный) =====
+-- ===== КРУГ FOV =====
 local fovCircle = Instance.new("Frame")
 fovCircle.Name = "FOVCircle"
 fovCircle.BackgroundTransparency = 1
 fovCircle.BorderSizePixel = 0
 fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-fovCircle.Size = UDim2.new(0, 900, 0, 900)
+fovCircle.Position = UDim2.new(0.5, 0, 0.5, -27)
+fovCircle.Size = UDim2.new(0, 180, 0, 180)
 fovCircle.Visible = false
 fovCircle.Parent = gui
 
@@ -36,7 +35,7 @@ circleUI.CornerRadius = UDim.new(1, 0)
 circleUI.Parent = fovCircle
 
 local circleStroke = Instance.new("UIStroke")
-circleStroke.Color = Color3.fromRGB(200, 0, 0)
+circleStroke.Color = Color3.fromRGB(255, 50, 50)
 circleStroke.Thickness = 2
 circleStroke.LineJoinMode = Enum.LineJoinMode.Round
 circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -45,12 +44,12 @@ circleStroke.Parent = fovCircle
 -- ===== КНОПКА МЕНЮ (минималистичная) =====
 local btn = Instance.new("TextButton")
 btn.Size = UDim2.new(0, 34, 0, 34)
-btn.Position = UDim2.new(0, 15, 0, 15)
-btn.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-btn.TextColor3 = Color3.new(0.9, 0, 0)
-btn.Text = "◄"
+btn.Position = UDim2.new(0, 14, 0, 14)
+btn.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+btn.TextColor3 = Color3.new(1, 0.2, 0.2)
+btn.Text = "SW"
 btn.Font = Enum.Font.SourceSansBold
-btn.TextSize = 18
+btn.TextSize = 13
 btn.BorderSizePixel = 0
 btn.Parent = gui
 
@@ -58,12 +57,12 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 10)
 btnCorner.Parent = btn
 
--- ===== МЕНЮ (минималистичное, компактное) =====
+-- ===== МЕНЮ (компактное, тёмное, с красной окантовкой) =====
 local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0, 190, 0, 260)
-menu.BackgroundColor3 = Color3.new(0.04, 0.04, 0.04)
+menu.Size = UDim2.new(0, 170, 0, 180)
+menu.BackgroundColor3 = Color3.new(0.06, 0.06, 0.06)
 menu.BorderSizePixel = 1
-menu.BorderColor3 = Color3.new(0.6, 0, 0)
+menu.BorderColor3 = Color3.new(0.8, 0.1, 0.1)
 menu.Visible = false
 menu.Parent = gui
 
@@ -76,24 +75,30 @@ local aim = false
 local esp = false
 local wall = false
 local autofire = false
-local wallbang = false
-local fovSize = 35
+local fovSize = 45
 
 local highlights = {}
-local teamColor = Color3.new(0, 0.9, 0)   -- зелёный
-local enemyColor = Color3.new(0.9, 0, 0) -- красный
+local teamColor = Color3.new(0, 1, 0.2)
+local enemyColor = Color3.new(1, 0.15, 0.15)
 
--- ===== ОПРЕДЕЛЕНИЕ КОМАНД =====
+-- ===== ОПРЕДЕЛЕНИЕ КОМАНДЫ (Duels) =====
 local function getTeam(player)
     if not player or not player.Character then return nil end
     local name = player.Name:lower()
-    if name:find("sheriff") or name:find("шериф") then return "Sheriff"
-    elseif name:find("murderer") or name:find("убийц") or name:find("kill") then return "Murderer"
+    if name:find("sheriff") or name:find("шериф") then
+        return "Sheriff"
+    elseif name:find("murderer") or name:find("убийц") or name:find("kill") then
+        return "Murderer"
     end
-    if player.Team then return player.Team.Name end
+    if player.Team then
+        return player.Team.Name
+    end
     local myTeam = plr.Team
-    if myTeam and player.Team == myTeam then return "Ally"
-    else return "Enemy" end
+    if myTeam and player.Team == myTeam then
+        return "Ally"
+    else
+        return "Enemy"
+    end
 end
 
 local function isEnemy(player)
@@ -106,25 +111,25 @@ local function isEnemy(player)
     return theirTeam ~= myTeam
 end
 
--- ===== WALLHACK (для прицела) =====
+-- ===== WALLBANG =====
 local function canSee(pos1, pos2)
+    if not wall then return true end
     local ray = Ray.new(pos1, pos2 - pos1)
     local part, hit = ws:FindPartOnRayWithIgnoreList(ray, {plr.Character})
     return (hit - pos1).Magnitude >= (pos2 - pos1).Magnitude - 2
 end
 
--- ===== СОЗДАНИЕ КНОПОК (элегантные) =====
+-- ===== СОЗДАНИЕ КНОПОК (минимализм) =====
 local function makeToggle(name, y, def, callback)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 170, 0, 26)
+    b.Size = UDim2.new(0, 150, 0, 24)
     b.Position = UDim2.new(0, 10, 0, y)
-    b.BackgroundColor3 = def and Color3.new(0.3, 0, 0) or Color3.new(0.1, 0.1, 0.1)
+    b.BackgroundColor3 = def and Color3.new(0.3, 0.05, 0.05) or Color3.new(0.12, 0.12, 0.12)
     b.TextColor3 = Color3.new(1, 1, 1)
-    b.Text = name .. "  " .. (def and "●" or "○")
+    b.Text = name .. " " .. (def and "ON" or "OFF")
     b.Font = Enum.Font.SourceSansBold
     b.TextSize = 13
     b.BorderSizePixel = 0
-    b.TextXAlignment = Enum.TextXAlignment.Left
     b.Parent = menu
 
     local c = Instance.new("UICorner")
@@ -133,42 +138,38 @@ local function makeToggle(name, y, def, callback)
 
     b.MouseButton1Click:Connect(function()
         def = not def
-        b.BackgroundColor3 = def and Color3.new(0.3, 0, 0) or Color3.new(0.1, 0.1, 0.1)
-        b.Text = name .. "  " .. (def and "●" or "○")
+        b.BackgroundColor3 = def and Color3.new(0.3, 0.05, 0.05) or Color3.new(0.12, 0.12, 0.12)
+        b.Text = name .. " " .. (def and "ON" or "OFF")
         if callback then callback(def) end
     end)
     return b
 end
 
--- ===== КНОПКИ =====
-makeToggle("Aimbot", 10, aim, function(v) aim = v end)
-makeToggle("ESP", 42, esp, function(v) esp = v end)
-makeToggle("WallCheck", 74, wall, function(v) wall = v end)
-makeToggle("Autofire", 106, autofire, function(v) autofire = v end)
-makeToggle("Wallbang", 138, wallbang, function(v) wallbang = v end)
+makeToggle("Aimbot", 8, aim, function(v) aim = v end)
+makeToggle("Autofire", 38, autofire, function(v) autofire = v end)
+makeToggle("ESP", 68, esp, function(v) esp = v end)
+makeToggle("Wallbang", 98, wall, function(v) wall = v end)
 
 -- ===== FOV РАЗМЕР =====
 local fovLabel = Instance.new("TextLabel")
-fovLabel.Size = UDim2.new(0, 70, 0, 18)
-fovLabel.Position = UDim2.new(0, 10, 0, 178)
+fovLabel.Size = UDim2.new(0, 70, 0, 16)
+fovLabel.Position = UDim2.new(0, 10, 0, 132)
 fovLabel.Text = "FOV " .. math.floor(fovSize)
-fovLabel.TextColor3 = Color3.new(0.8, 0, 0)
+fovLabel.TextColor3 = Color3.new(1, 0.3, 0.3)
 fovLabel.BackgroundTransparency = 1
 fovLabel.Font = Enum.Font.SourceSansBold
-fovLabel.TextSize = 13
-fovLabel.TextXAlignment = Enum.TextXAlignment.Left
+fovLabel.TextSize = 12
 fovLabel.Parent = menu
 
 local fovBox = Instance.new("TextBox")
-fovBox.Size = UDim2.new(0, 50, 0, 22)
-fovBox.Position = UDim2.new(0, 120, 0, 176)
+fovBox.Size = UDim2.new(0, 50, 0, 20)
+fovBox.Position = UDim2.new(0, 100, 0, 130)
 fovBox.Text = tostring(math.floor(fovSize))
-fovBox.BackgroundColor3 = Color3.new(0.12, 0, 0)
+fovBox.BackgroundColor3 = Color3.new(0.15, 0.05, 0.05)
 fovBox.TextColor3 = Color3.new(1, 1, 1)
 fovBox.Font = Enum.Font.SourceSansBold
-fovBox.TextSize = 14
+fovBox.TextSize = 13
 fovBox.ClearTextOnFocus = false
-fovBox.BorderSizePixel = 0
 fovBox.Parent = menu
 
 local fovCorner = Instance.new("UICorner")
@@ -178,7 +179,7 @@ fovCorner.Parent = fovBox
 fovBox.FocusLost:Connect(function()
     local v = tonumber(fovBox.Text)
     if v then
-        fovSize = math.clamp(v, 10, 300)
+        fovSize = math.clamp(v, 10, 250)
         fovLabel.Text = "FOV " .. math.floor(fovSize)
         fovBox.Text = tostring(math.floor(fovSize))
     else
@@ -186,7 +187,7 @@ fovBox.FocusLost:Connect(function()
     end
 end)
 
--- ===== ДВИЖЕНИЕ КНОПКИ =====
+-- ===== ПЕРЕТАСКИВАНИЕ КНОПКИ =====
 local dragging = false
 local dragStart, startPos
 
@@ -218,9 +219,9 @@ uis.InputChanged:Connect(function(input)
             local screenW = cam.ViewportSize.X
             local menuW = menu.AbsoluteSize.X
             if absX < screenW / 2 then
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 45, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 42, 0, btn.AbsolutePosition.Y)
             else
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 6, 0, btn.AbsolutePosition.Y)
             end
         end
     end
@@ -233,28 +234,32 @@ local function toggleMenu()
         local screenW = cam.ViewportSize.X
         local menuW = menu.AbsoluteSize.X
         if absX < screenW / 2 then
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 45, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 42, 0, btn.AbsolutePosition.Y)
         else
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 5, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 6, 0, btn.AbsolutePosition.Y)
         end
     end
 end
 
 btn.MouseButton1Click:Connect(toggleMenu)
 uis.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.D then toggleMenu() end
+    if input.KeyCode == Enum.KeyCode.D or input.KeyCode == Enum.KeyCode.B then toggleMenu() end
 end)
 
--- ===== AUTOFIRE (стрельба по врагу) =====
-local function shootTarget(targetPos)
-    if not targetPos or not mouse then return end
-    local scr = cam:WorldToViewportPoint(targetPos)
-    if scr then
-        mouse.Move(UDim2.new(0, scr.X, 0, scr.Y))
-        mouse.Button1Down()
-        task.wait(0.03)
-        mouse.Button1Up()
-    end
+-- ===== АВТОСТРЕЛЬБА (Autofire) =====
+local function autoShoot(targetPos)
+    if not plr.Character then return end
+    local tool = plr.Character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    local mouse = plr:GetMouse()
+    if not mouse then return end
+    -- Имитация клика мыши по цели
+    local oldPos = mouse.Hit.Position
+    mouse.Hit = CFrame.new(targetPos)
+    mouse.Button1Down:Fire()
+    task.wait(0.05)
+    mouse.Button1Up:Fire()
+    mouse.Hit = CFrame.new(oldPos)
 end
 
 -- ===== ГЛАВНЫЙ ЦИКЛ =====
@@ -268,7 +273,7 @@ rs.RenderStepped:Connect(function()
                     h.FillColor = isEnemy(p) and enemyColor or teamColor
                     h.FillTransparency = 0.45
                     h.OutlineColor = Color3.new(1, 1, 1)
-                    h.OutlineTransparency = 0.25
+                    h.OutlineTransparency = 0.2
                     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     h.Parent = p.Character
                     highlights[p] = h
@@ -296,13 +301,11 @@ rs.RenderStepped:Connect(function()
         highlights = {}
     end
 
-    -- Поиск цели (общий для аимбота и автоогня)
-    local targetPos = nil
-    local targetPlayer = nil
-
+    -- AIMBOT + AUTOFIRE
     if (aim or autofire) and plr.Character then
         local camPos = cam.CFrame.Position
         local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+        local best = nil
         local bestDist = math.huge
 
         for _, p in ipairs(players:GetPlayers()) do
@@ -313,45 +316,31 @@ rs.RenderStepped:Connect(function()
                     if onScreen and scr.Z > 0 then
                         local dist2d = (Vector2.new(scr.X, scr.Y) - center).Magnitude
                         if dist2d <= fovSize then
-                            local ok = true
-                            if wall then ok = canSee(camPos, head.Position) end
-                            -- Wallbang: игнорируем видимость для выстрела
-                            if wallbang and autofire then ok = true end
+                            local ok = canSee(camPos, head.Position)
                             if ok and dist2d < bestDist then
                                 bestDist = dist2d
-                                targetPos = head.Position
-                                targetPlayer = p
+                                best = head.Position
                             end
                         end
                     end
                 end
             end
         end
-    end
 
-    -- Aimbot (наведение)
-    if aim and targetPos then
-        cam.CFrame = CFrame.lookAt(cam.CFrame.Position, targetPos)
-    end
-
-    -- Autofire (автоматический выстрел по цели)
-    if autofire and targetPos and targetPlayer then
-        -- Проверка: если Wallbang выключен, но цель за стеной — не стреляем
-        if not wallbang and wall then
-            local camPos = cam.CFrame.Position
-            local ok = canSee(camPos, targetPos)
-            if not ok then targetPos = nil end
-        end
-        if targetPos then
-            shootTarget(targetPos)
+        if best then
+            if aim then
+                cam.CFrame = CFrame.lookAt(camPos, best)
+            end
+            if autofire then
+                autoShoot(best)
+            end
         end
     end
 
     -- КРУГ FOV
     local circleSize = fovSize * 2
     fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
-    fovCircle.Visible = aim
-    fovCircle.Position = UDim2.new(0.5, 0, 0.5, -27)
+    fovCircle.Visible = aim or autofire
 end)
 
-print("SWILL Pro loaded! Autofire + Wallbang. Menu: B or D")
+print("SWILL Duels loaded | ESP Green=Team Red=Enemy | Aimbot+Autofire | Wallbang | Menu B/D")
