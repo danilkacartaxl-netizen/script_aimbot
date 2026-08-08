@@ -1,189 +1,293 @@
--- ESP Library by linemaster2
--- https://github.com/linemaster2/esp-library
+-- ==============================================
+-- WINSTIK ESP MENU (Простое меню для ESP)
+-- Использует библиотеку ESP
+-- ==============================================
 
-local ESP = {}
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
+local player = game.Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local userInput = game:GetService("UserInputService")
 
--- Настройки по умолчанию
-ESP.Settings = {
-    Enabled = false,
-    Color = Color3.fromRGB(255, 0, 0),
-    Transparency = 0.5,
-    Thickness = 2,
-    ShowName = true,
-    ShowHealth = true,
-    ShowBox = true,
+-- ==========================================
+-- ЗАГРУЗКА ESP БИБЛИОТЕКИ
+-- ==========================================
+local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/linemaster2/esp-library/main/library.lua"))()
+
+-- ==========================================
+-- НАСТРОЙКИ
+-- ==========================================
+local settings = {
+    ESPEnabled = false,
+    ESPColor = Color3.fromRGB(0, 150, 255), -- Голубой
     ShowSkeleton = true,
-    AlwaysOnTop = false
+    ShowHealth = true,
+    ShowName = true,
+    ShowBox = true,
+    Wallhack = false
 }
 
--- Хранилище объектов ESP
-local ESPObjects = {}
+-- ==========================================
+-- GUI (ПРОСТОЕ МЕНЮ)
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "WINSTIK_ESP"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player.PlayerGui
 
--- Создание ESP для игрока
-function ESP:AddPlayer(plr)
-    if not plr or not plr.Character then return end
-    if ESPObjects[plr] then return end
+-- Кнопка открытия меню
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 40, 0, 40)
+toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+toggleBtn.Text = "E"
+toggleBtn.TextColor3 = Color3.fromRGB(0, 150, 255)
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.BorderSizePixel = 2
+toggleBtn.BorderColor3 = Color3.fromRGB(0, 150, 255)
+toggleBtn.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 10)
+toggleCorner.Parent = toggleBtn
+
+-- Главное меню
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 200, 0, 250)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -125)
+mainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(0, 150, 255)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+title.Text = "WINSTIK ESP"
+title.TextColor3 = Color3.fromRGB(0, 150, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+-- Кнопка закрытия
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -30, 0, 5)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = mainFrame
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    toggleBtn.Visible = true
+end)
+
+-- Разделитель
+local line = Instance.new("Frame")
+line.Size = UDim2.new(0.9, 0, 0, 1)
+line.Position = UDim2.new(0.05, 0, 0, 35)
+line.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+line.BorderSizePixel = 0
+line.Parent = mainFrame
+
+-- ==========================================
+-- ФУНКЦИЯ СОЗДАНИЯ ТОГГЛА
+-- ==========================================
+local function createToggle(text, yPos, settingKey)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 30)
+    frame.Position = UDim2.new(0.05, 0, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = mainFrame
     
-    local char = plr.Character
-    local folder = Instance.new("Folder")
-    folder.Name = "ESP_" .. plr.Name
-    folder.Parent = char
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 6)
+    frameCorner.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0.05, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 50, 0, 22)
+    btn.Position = UDim2.new(0.7, 0, 0.5, -11)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Text = "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = frame
     
-    -- Бокс
-    if ESP.Settings.ShowBox then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Size = Vector3.new(3, 5, 1)
-        box.Adornee = char
-        box.Color3 = ESP.Settings.Color
-        box.Transparency = ESP.Settings.Transparency
-        box.AlwaysOnTop = ESP.Settings.AlwaysOnTop
-        box.Parent = folder
-    end
-    
-    -- Скелет
-    if ESP.Settings.ShowSkeleton then
-        local function createLine(p1, p2)
-            local line = Instance.new("LineHandleAdornment")
-            line.Adornee = char
-            line.Point1 = p1.Position
-            line.Point2 = p2.Position
-            line.Color3 = ESP.Settings.Color
-            line.Thickness = ESP.Settings.Thickness
-            line.Transparency = ESP.Settings.Transparency
-            line.AlwaysOnTop = ESP.Settings.AlwaysOnTop
-            line.Parent = folder
-            return line
-        end
-        
-        local head = char:FindFirstChild("Head")
-        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-        local la = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
-        local ra = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
-        local ll = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftLowerLeg")
-        local rl = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
-        
-        if head and torso then
-            createLine(head, torso)
-            if la then createLine(torso, la) end
-            if ra then createLine(torso, ra) end
-            if ll then createLine(torso, ll) end
-            if rl then createLine(torso, rl) end
-        end
-    end
-    
-    -- Имя
-    if ESP.Settings.ShowName then
-        local nameGui = Instance.new("BillboardGui")
-        nameGui.Adornee = char:FindFirstChild("Head")
-        nameGui.Size = UDim2.new(0, 100, 0, 20)
-        nameGui.StudsOffset = Vector3.new(0, 2.5, 0)
-        nameGui.Parent = folder
-        
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 1, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = plr.Name
-        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLabel.TextScaled = true
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.Parent = nameGui
-    end
-    
-    -- Здоровье
-    if ESP.Settings.ShowHealth then
-        local healthGui = Instance.new("BillboardGui")
-        healthGui.Adornee = char:FindFirstChild("Head")
-        healthGui.Size = UDim2.new(0, 50, 0, 4)
-        healthGui.StudsOffset = Vector3.new(0, 2, 0)
-        healthGui.Parent = folder
-        
-        local bg = Instance.new("Frame")
-        bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        bg.Parent = healthGui
-        
-        local fill = Instance.new("Frame")
-        fill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        fill.Size = UDim2.new(1, 0, 1, 0)
-        fill.Parent = bg
-        
-        ESPObjects[plr] = {Folder = folder, Health = fill, Player = plr}
-    else
-        ESPObjects[plr] = {Folder = folder, Player = plr}
-    end
-end
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
 
--- Удаление ESP для игрока
-function ESP:RemovePlayer(plr)
-    if ESPObjects[plr] then
-        ESPObjects[plr].Folder:Destroy()
-        ESPObjects[plr] = nil
-    end
-end
-
--- Обновление ESP
-function ESP:Update()
-    for plr, data in pairs(ESPObjects) do
-        if not plr.Character or not plr.Character.Parent then
-            data.Folder:Destroy()
-            ESPObjects[plr] = nil
-        elseif ESP.Settings.ShowHealth and data.Health then
-            local hum = plr.Character:FindFirstChild("Humanoid")
-            if hum then
-                data.Health.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
-            end
-        end
-    end
-end
-
--- Включение/выключение ESP
-function ESP:Toggle(state)
-    ESP.Settings.Enabled = state
-    if state then
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer then
-                self:AddPlayer(plr)
-            end
-        end
-    else
-        for plr, data in pairs(ESPObjects) do
-            data.Folder:Destroy()
-        end
-        ESPObjects = {}
-    end
-end
-
--- Изменение цвета
-function ESP:SetColor(color)
-    ESP.Settings.Color = color
-    for plr, data in pairs(ESPObjects) do
-        if data.Folder then
-            for _, child in ipairs(data.Folder:GetChildren()) do
-                if child:IsA("Adornment") then
-                    child.Color3 = color
-                end
-            end
-        end
-    end
-end
-
--- Автоматическое обновление
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function()
-        if ESP.Settings.Enabled then
-            ESP:AddPlayer(plr)
+    btn.MouseButton1Click:Connect(function()
+        settings[settingKey] = not settings[settingKey]
+        btn.Text = settings[settingKey] and "ON" or "OFF"
+        btn.BackgroundColor3 = settings[settingKey] and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 50)
+        
+        -- Обновляем ESP
+        if settingKey == "ESPEnabled" then
+            ESP:Toggle(settings.ESPEnabled)
+        elseif settingKey == "Wallhack" then
+            ESP.Settings.AlwaysOnTop = settings.Wallhack
+        elseif settingKey == "ShowSkeleton" then
+            ESP.Settings.ShowSkeleton = settings.ShowSkeleton
+        elseif settingKey == "ShowHealth" then
+            ESP.Settings.ShowHealth = settings.ShowHealth
+        elseif settingKey == "ShowName" then
+            ESP.Settings.ShowName = settings.ShowName
+        elseif settingKey == "ShowBox" then
+            ESP.Settings.ShowBox = settings.ShowBox
         end
     end)
+
+    return btn
+end
+
+-- ==========================================
+-- ФУНКЦИЯ ДЛЯ ВЫБОРА ЦВЕТА
+-- ==========================================
+local function createColorPicker(yPos)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 30)
+    frame.Position = UDim2.new(0.05, 0, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = mainFrame
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 6)
+    frameCorner.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0.05, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Цвет ESP"
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local colorBtn = Instance.new("TextButton")
+    colorBtn.Size = UDim2.new(0, 60, 0, 22)
+    colorBtn.Position = UDim2.new(0.65, 0, 0.5, -11)
+    colorBtn.BackgroundColor3 = settings.ESPColor
+    colorBtn.Text = "Сменить"
+    colorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    colorBtn.TextScaled = true
+    colorBtn.Font = Enum.Font.GothamBold
+    colorBtn.Parent = frame
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = colorBtn
+
+    local colors = {
+        Color3.fromRGB(255, 0, 0),    -- Красный
+        Color3.fromRGB(0, 255, 0),    -- Зеленый
+        Color3.fromRGB(0, 150, 255),  -- Голубой
+        Color3.fromRGB(255, 255, 0),  -- Желтый
+        Color3.fromRGB(255, 0, 255),  -- Фиолетовый
+        Color3.fromRGB(255, 128, 0),  -- Оранжевый
+        Color3.fromRGB(255, 255, 255) -- Белый
+    }
+    local colorIndex = 1
+
+    colorBtn.MouseButton1Click:Connect(function()
+        colorIndex = colorIndex % #colors + 1
+        settings.ESPColor = colors[colorIndex]
+        colorBtn.BackgroundColor3 = settings.ESPColor
+        ESP:SetColor(settings.ESPColor)
+        mainFrame.BorderColor3 = settings.ESPColor
+        title.TextColor3 = settings.ESPColor
+        line.BackgroundColor3 = settings.ESPColor
+    end)
+
+    return colorBtn
+end
+
+-- ==========================================
+-- СОЗДАНИЕ ЭЛЕМЕНТОВ МЕНЮ
+-- ==========================================
+local y = 45
+
+createToggle("ВКЛ ESP", y, "ESPEnabled")
+y = y + 35
+
+createToggle("Скелет", y, "ShowSkeleton")
+y = y + 35
+
+createToggle("Здоровье", y, "ShowHealth")
+y = y + 35
+
+createToggle("Имя", y, "ShowName")
+y = y + 35
+
+createToggle("Бокс", y, "ShowBox")
+y = y + 35
+
+createToggle("Wallhack", y, "Wallhack")
+y = y + 35
+
+createColorPicker(y)
+y = y + 40
+
+mainFrame.Size = UDim2.new(0, 200, 0, y + 10)
+
+-- ==========================================
+-- УПРАВЛЕНИЕ МЕНЮ
+-- ==========================================
+toggleBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+    toggleBtn.Visible = not mainFrame.Visible
 end)
 
-RunService.RenderStepped:Connect(function()
-    if ESP.Settings.Enabled then
-        ESP:Update()
+-- Открытие по клавише E
+userInput.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.E then
+        mainFrame.Visible = not mainFrame.Visible
+        toggleBtn.Visible = not mainFrame.Visible
     end
 end)
 
-return ESP
+-- ==========================================
+-- ИНИЦИАЛИЗАЦИЯ
+-- ==========================================
+print("WINSTIK ESP MENU загружен!")
+print("Нажми E для открытия меню")
+print("Или нажми на кнопку E в углу экрана")
+
+-- Включаем ESP по умолчанию
+settings.ESPEnabled = true
+ESP:Toggle(true)
+ESP.Settings.Color = settings.ESPColor
+ESP.Settings.ShowSkeleton = true
+ESP.Settings.ShowHealth = true
+ESP.Settings.ShowName = true
+ESP.Settings.ShowBox = true
+ESP.Settings.AlwaysOnTop = false
+ESP.Settings.Transparency = 0.3
+ESP.Settings.Thickness = 2
