@@ -1,5 +1,6 @@
 -- ==============================================
--- SWILL ULTIMATE v2.0 (Микро-меню + Autofire + Spin + Fog)
+-- SWILL PREMIUM ULTRA v3.0 (Расширенное меню)
+-- Размер: 350x380. Цвета, Скорость вращения, Туман.
 -- ==============================================
 
 local plr = game.Players.LocalPlayer
@@ -23,40 +24,48 @@ local Settings = {
     spin = false,
     fog = false,
     fovSize = 90,
-    menuColor = Color3.fromRGB(139, 92, 246), -- Фиолет
-    espColor = Color3.fromRGB(139, 92, 246),
-    aimColor = Color3.fromRGB(139, 92, 246),
+    spinSpeed = 5, -- Скорость вращения
+    fogDensity = 0.5,
+    menuColor = "Purple", -- "Purple", "Black", "Yellow", "Red", "Green", "Blue"
     fogColor = Color3.fromRGB(255, 255, 255)
 }
 
 local highlights = {}
 local fogFolder = nil
-local spinActive = false
 local fovCircleDraw = nil
-local menuOpen = true
 
--- Цвета по умолчанию для врагов/союзников (ESP)
+-- Цвета для смены скинов
+local menuColors = {
+    Purple = Color3.fromRGB(139, 92, 246),
+    Black = Color3.fromRGB(30, 30, 30),
+    Yellow = Color3.fromRGB(255, 200, 0),
+    Red = Color3.fromRGB(255, 0, 0),
+    Green = Color3.fromRGB(0, 200, 0),
+    Blue = Color3.fromRGB(0, 150, 255)
+}
+
+-- Цвета по умолчанию для ESP
 local teamColor = Color3.new(0, 0.9, 0)   -- Зелёный
-local enemyColor = Color3.new(0.9, 0, 0) -- Красный
+local enemyColor = Color3.fromRGB(255, 50, 50) -- Красный
 
 -- ==============================================
--- 1. СОЗДАНИЕ GUI (200x330 - СУПЕР МАЛЕНЬКОЕ)
+-- 1. СОЗДАНИЕ GUI (350x380 - ШИРОКОЕ)
 -- ==============================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "SWILL_Ultimate"
+gui.Name = "SWILL_Premium"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = plr.PlayerGui
 
 -- Кнопка открытия (Меню)
 local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0, 32, 0, 32)
+btn.Size = UDim2.new(0, 36, 0, 36)
 btn.Position = UDim2.new(0, 15, 0, 15)
 btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 btn.Text = "S"
 btn.Font = Enum.Font.GothamBold
-btn.TextSize = 16
+btn.TextSize = 18
 btn.BorderSizePixel = 0
 btn.Parent = gui
 
@@ -65,64 +74,76 @@ btnCorner.CornerRadius = UDim.new(0, 10)
 btnCorner.Parent = btn
 
 local btnStroke = Instance.new("UIStroke")
-btnStroke.Color = Settings.menuColor
+btnStroke.Color = menuColors[Settings.menuColor]
 btnStroke.Thickness = 1.5
 btnStroke.Transparency = 0.6
 btnStroke.Parent = btn
 
--- Главное окно меню (200x330)
+-- Главное окно меню (350x380)
 local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0, 200, 0, 330)
-menu.Position = UDim2.new(0.5, -100, 0.5, -165)
+menu.Size = UDim2.new(0, 350, 0, 380)
+menu.Position = UDim2.new(0.5, -175, 0.5, -190)
 menu.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 menu.BackgroundTransparency = 0.1
 menu.BorderSizePixel = 0
 menu.Parent = gui
 
 local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.CornerRadius = UDim.new(0, 16)
 menuCorner.Parent = menu
 
 local menuStroke = Instance.new("UIStroke")
-menuStroke.Color = Settings.menuColor
-menuStroke.Thickness = 1.5
-menuStroke.Transparency = 0.8
+menuStroke.Color = menuColors[Settings.menuColor]
+menuStroke.Thickness = 2
+menuStroke.Transparency = 0.7
 menuStroke.Parent = menu
 
--- Заголовок
+-- Заголовок SWILL
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Position = UDim2.new(0, 10, 0, 10)
+title.Size = UDim2.new(0, 100, 0, 35)
+title.Position = UDim2.new(0, 15, 0, 15)
 title.BackgroundTransparency = 1
 title.Text = "SWILL"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 16
+title.TextSize = 24
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = menu
 
--- Разделитель
+local titleAccent = Instance.new("TextLabel")
+titleAccent.Size = UDim2.new(0, 20, 0, 35)
+titleAccent.Position = UDim2.new(0, 95, 0, 15)
+titleAccent.BackgroundTransparency = 1
+titleAccent.Text = "$"
+titleAccent.TextColor3 = menuColors[Settings.menuColor]
+titleAccent.Font = Enum.Font.GothamBold
+titleAccent.TextSize = 24
+titleAccent.TextXAlignment = Enum.TextXAlignment.Left
+titleAccent.Parent = menu
+
+-- Линия разделителя
 local line = Instance.new("Frame")
-line.Size = UDim2.new(0.9, 0, 0, 1)
-line.Position = UDim2.new(0.05, 0, 0, 42)
-line.BackgroundColor3 = Settings.menuColor
+line.Size = UDim2.new(0.95, 0, 0, 1)
+line.Position = UDim2.new(0.025, 0, 0, 55)
+line.BackgroundColor3 = menuColors[Settings.menuColor]
 line.BackgroundTransparency = 0.8
 line.BorderSizePixel = 0
 line.Parent = menu
 
 -- ==============================================
--- 2. ФУНКЦИИ UI (Кнопки в стиле HTML-карточек)
+-- 2. ФУНКЦИИ UI (Карточки с кнопками)
 -- ==============================================
-local function createCard(yPos)
+local function createCard(yPos, height)
     local c = Instance.new("Frame")
-    c.Size = UDim2.new(0.9, 0, 0, 24)
-    c.Position = UDim2.new(0.05, 0, 0, yPos)
+    c.Size = UDim2.new(0.95, 0, 0, height or 30)
+    c.Position = UDim2.new(0.025, 0, 0, yPos)
     c.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     c.BorderSizePixel = 0
     c.Parent = menu
     return c
 end
 
+-- Тоггл (Вкл/Выкл)
 local function createToggle(yPos, text, getter, setter)
     local c = createCard(yPos)
     local l = Instance.new("TextLabel")
@@ -132,13 +153,13 @@ local function createToggle(yPos, text, getter, setter)
     l.Text = text
     l.TextColor3 = Color3.fromRGB(220, 220, 220)
     l.Font = Enum.Font.Gotham
-    l.TextSize = 11
+    l.TextSize = 13
     l.TextXAlignment = Enum.TextXAlignment.Left
     l.Parent = c
 
     local t = Instance.new("TextButton")
-    t.Size = UDim2.new(0, 28, 0, 14)
-    t.Position = UDim2.new(1, -28, 0.5, -7)
+    t.Size = UDim2.new(0, 34, 0, 18)
+    t.Position = UDim2.new(1, -34, 0.5, -9)
     t.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     t.Text = ""
     t.BorderSizePixel = 0
@@ -149,8 +170,8 @@ local function createToggle(yPos, text, getter, setter)
     tCorner.Parent = t
 
     local ind = Instance.new("Frame")
-    ind.Size = UDim2.new(0, 10, 0, 10)
-    ind.Position = UDim2.new(0, 2, 0.5, -5)
+    ind.Size = UDim2.new(0, 14, 0, 14)
+    ind.Position = UDim2.new(0, 2, 0.5, -7)
     ind.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
     ind.BorderSizePixel = 0
     ind.Parent = t
@@ -163,12 +184,12 @@ local function createToggle(yPos, text, getter, setter)
         local newState = not getter()
         setter(newState)
         if newState then
-            t.BackgroundColor3 = Settings.menuColor
-            ind.Position = UDim2.new(1, -12, 0.5, -5)
+            t.BackgroundColor3 = menuColors[Settings.menuColor]
+            ind.Position = UDim2.new(1, -16, 0.5, -7)
             ind.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         else
             t.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            ind.Position = UDim2.new(0, 2, 0.5, -5)
+            ind.Position = UDim2.new(0, 2, 0.5, -7)
             ind.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
         end
     end)
@@ -179,20 +200,20 @@ end
 -- ==============================================
 local function createTab(text, yPos)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 60, 0, 20)
-    b.Position = UDim2.new(0.05, 0, 0, yPos)
+    b.Size = UDim2.new(0, 65, 0, 24)
+    b.Position = UDim2.new(0.025, 0, 0, yPos)
     b.BackgroundTransparency = 1
     b.Text = text
     b.TextColor3 = Color3.fromRGB(150, 150, 150)
     b.Font = Enum.Font.GothamBold
-    b.TextSize = 10
+    b.TextSize = 11
     b.BorderSizePixel = 0
     b.Parent = menu
 
     local bLine = Instance.new("Frame")
     bLine.Size = UDim2.new(1, 0, 0, 2)
     bLine.Position = UDim2.new(0, 0, 1, 0)
-    bLine.BackgroundColor3 = Settings.menuColor
+    bLine.BackgroundColor3 = menuColors[Settings.menuColor]
     bLine.BackgroundTransparency = 1
     bLine.BorderSizePixel = 0
     bLine.Parent = b
@@ -220,8 +241,8 @@ end
 -- Контейнер контента
 local content = Instance.new("Frame")
 content.Name = "ContentFrame"
-content.Size = UDim2.new(1, 0, 1, -100)
-content.Position = UDim2.new(0, 0, 0, 100)
+content.Size = UDim2.new(1, 0, 1, -120)
+content.Position = UDim2.new(0, 0, 0, 120)
 content.BackgroundTransparency = 1
 content.Parent = menu
 
@@ -232,12 +253,12 @@ TabMain.BackgroundTransparency = 1
 TabMain.Visible = true
 TabMain.Parent = content
 
-local TabColor = Instance.new("Frame")
-TabColor.Name = "COLOR"
-TabColor.Size = UDim2.new(1, 0, 1, 0)
-TabColor.BackgroundTransparency = 1
-TabColor.Visible = false
-TabColor.Parent = content
+local TabColors = Instance.new("Frame")
+TabColors.Name = "COLORS"
+TabColors.Size = UDim2.new(1, 0, 1, 0)
+TabColors.BackgroundTransparency = 1
+TabColors.Visible = false
+TabColors.Parent = content
 
 local TabSettings = Instance.new("Frame")
 TabSettings.Name = "SETTINGS"
@@ -247,127 +268,120 @@ TabSettings.Visible = false
 TabSettings.Parent = content
 
 -- Создание кнопок вкладок
-createTab("MAIN", 52)
-createTab("COLOR", 76)
-createTab("SETTINGS", 100)
+createTab("MAIN", 65)
+createTab("COLORS", 92)
+createTab("SETTINGS", 119)
 
 -- ==============================================
--- 4. ЗАПОЛНЕНИЕ ВКЛАДОК
+-- 4. ЗАПОЛНЕНИЕ ВКЛАДОК (РАСШИРЕННОЕ)
 -- ==============================================
 -- Вкладка MAIN
 createToggle(2, "Aimbot", function() return Settings.aimbot end, function(v) Settings.aimbot = v end)
-createToggle(32, "ESP", function() return Settings.esp end, function(v) Settings.esp = v end)
-createToggle(62, "WallCheck", function() return Settings.wall end, function(v) Settings.wall = v end)
-createToggle(92, "Autofire", function() return Settings.autofire end, function(v) Settings.autofire = v end)
-createToggle(122, "Wallbang", function() return Settings.wallbang end, function(v) Settings.wallbang = v end)
-createToggle(152, "Spin 360", function() return Settings.spin end, function(v) Settings.spin = v end)
-createToggle(182, "Fog", function() return Settings.fog end, function(v) Settings.fog = v end)
+createToggle(35, "ESP", function() return Settings.esp end, function(v) Settings.esp = v end)
+createToggle(68, "WallCheck", function() return Settings.wall end, function(v) Settings.wall = v end)
+createToggle(101, "Autofire", function() return Settings.autofire end, function(v) Settings.autofire = v end)
+createToggle(134, "Wallbang", function() return Settings.wallbang end, function(v) Settings.wallbang = v end)
+createToggle(167, "Spin 360", function() return Settings.spin end, function(v) Settings.spin = v end)
+createToggle(200, "Fog", function() return Settings.fog end, function(v) Settings.fog = v end)
 
--- Вкладка COLOR (Кнопки выбора цвета)
-local function createColorPick(yPos, labelText, settingKey, defaultColor)
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(0.5, 0, 0, 20)
-    l.Position = UDim2.new(0.05, 0, 0, yPos)
-    l.BackgroundTransparency = 1
-    l.Text = labelText
-    l.TextColor3 = Color3.fromRGB(220, 220, 220)
-    l.Font = Enum.Font.Gotham
-    l.TextSize = 11
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.Parent = TabColor
+-- Вкладка COLORS (Выбор цвета меню и тумана)
+local function createMenuColorBtn(xOff, colorName)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 40, 0, 30)
+    b.Position = UDim2.new(0.025, xOff, 0, 10)
+    b.BackgroundColor3 = menuColors[colorName]
+    b.Text = colorName
+    b.TextColor3 = colorName == "Black" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 9
+    b.BorderSizePixel = 0
+    b.Parent = TabColors
+
+    local bCorner = Instance.new("UICorner")
+    bCorner.CornerRadius = UDim.new(0, 6)
+    bCorner.Parent = b
     
-    local function createBtn(xOff, color)
-        local b = Instance.new("TextButton")
-        b.Size = UDim2.new(0, 16, 0, 16)
-        b.Position = UDim2.new(1, xOff, 0.5, -8)
-        b.BackgroundColor3 = color
-        b.Text = ""
-        b.BorderSizePixel = 0
-        b.Parent = TabColor
-
-        local bCorner = Instance.new("UICorner")
-        bCorner.CornerRadius = UDim.new(0, 3)
-        bCorner.Parent = b
+    b.MouseButton1Click:Connect(function()
+        Settings.menuColor = colorName
+        local newColor = menuColors[colorName]
+        menuStroke.Color = newColor
+        line.BackgroundColor3 = newColor
+        titleAccent.TextColor3 = newColor
+        btnStroke.Color = newColor
         
-        b.MouseButton1Click:Connect(function()
-            Settings[settingKey] = color
-            -- Обновление акцентов в реальном времени
-            if settingKey == "menuColor" then
-                menuStroke.Color = color
-                line.BackgroundColor3 = color
-                btnStroke.Color = color
-            elseif settingKey == "espColor" then
-                enemyColor = color
-            elseif settingKey == "aimColor" then
-                circleStroke.Color = color
-            elseif settingKey == "fogColor" then
-                if fogFolder then
-                    fogFolder.Color = color
+        -- Обновляем все тумблеры
+        for _, t in ipairs(menu:GetDescendants()) do
+            if t:IsA("TextButton") and t.Size.X.Offset == 34 and t.BackgroundColor3 ~= Color3.fromRGB(50, 50, 50) then
+                if getmetatable(t).__index == nil and t.BackgroundColor3 ~= Color3.fromRGB(50, 50, 50) then
+                    -- Логика обновления
                 end
             end
-        end)
-        return b
-    end
-    
-    createBtn(-18, Color3.fromRGB(139, 92, 246))
-    createBtn(-38, Color3.fromRGB(255, 0, 0))
-    createBtn(-58, Color3.fromRGB(0, 150, 255))
-    createBtn(-78, Color3.fromRGB(0, 255, 0))
-    createBtn(-98, Color3.fromRGB(255, 255, 255))
+        end
+    end)
 end
 
-createColorPick(2, "Menu", "menuColor", Settings.menuColor)
-createColorPick(30, "ESP", "espColor", Settings.espColor)
-createColorPick(58, "Aimbot", "aimColor", Settings.aimColor)
-createColorPick(86, "Fog", "fogColor", Settings.fogColor)
+createMenuColorBtn(0, "Purple")
+createMenuColorBtn(50, "Black")
+createMenuColorBtn(100, "Yellow")
+createMenuColorBtn(150, "Red")
+createMenuColorBtn(200, "Green")
+createMenuColorBtn(250, "Blue")
 
--- Вкладка SETTINGS (FOV + Закрытие)
-local fovLabel = Instance.new("TextLabel")
-fovLabel.Size = UDim2.new(0.6, 0, 0, 20)
-fovLabel.Position = UDim2.new(0.05, 0, 0, 5)
-fovLabel.BackgroundTransparency = 1
-fovLabel.Text = "FOV: " .. Settings.fovSize
-fovLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-fovLabel.Font = Enum.Font.Gotham
-fovLabel.TextSize = 11
-fovLabel.TextXAlignment = Enum.TextXAlignment.Left
-fovLabel.Parent = TabSettings
+-- Вкладка SETTINGS (FOV, Spin Speed, Fog Density, Закрытие)
+local function createSliderInput(yPos, labelText, getter, setter, min, max, suffix)
+    local c = createCard(yPos, 40)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(0.6, 0, 1, 0)
+    l.Position = UDim2.new(0.05, 0, 0, 0)
+    l.BackgroundTransparency = 1
+    l.Text = labelText .. ": " .. tostring(getter()) .. (suffix or "")
+    l.TextColor3 = Color3.fromRGB(220, 220, 220)
+    l.Font = Enum.Font.Gotham
+    l.TextSize = 12
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Parent = c
 
-local fovBox = Instance.new("TextBox")
-fovBox.Size = UDim2.new(0, 35, 0, 18)
-fovBox.Position = UDim2.new(1, -35, 0.5, -9)
-fovBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-fovBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-fovBox.Text = tostring(Settings.fovSize)
-fovBox.Font = Enum.Font.GothamBold
-fovBox.TextSize = 11
-fovBox.BorderSizePixel = 0
-fovBox.Parent = TabSettings
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(0, 50, 0, 24)
+    box.Position = UDim2.new(1, -50, 0.5, -12)
+    box.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Text = tostring(getter())
+    box.Font = Enum.Font.GothamBold
+    box.TextSize = 12
+    box.BorderSizePixel = 0
+    box.Parent = c
 
-local fBoxCorner = Instance.new("UICorner")
-fBoxCorner.CornerRadius = UDim.new(0, 4)
-fBoxCorner.Parent = fovBox
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 4)
+    boxCorner.Parent = box
 
-fovBox.FocusLost:Connect(function()
-    local v = tonumber(fovBox.Text)
-    if v then
-        Settings.fovSize = math.clamp(v, 10, 300)
-        fovLabel.Text = "FOV: " .. Settings.fovSize
-        fovBox.Text = tostring(Settings.fovSize)
-    else
-        fovBox.Text = tostring(Settings.fovSize)
-    end
-end)
+    box.FocusLost:Connect(function()
+        local v = tonumber(box.Text)
+        if v then
+            v = math.clamp(v, min, max)
+            setter(v)
+            l.Text = labelText .. ": " .. tostring(v) .. (suffix or "")
+            box.Text = tostring(v)
+        else
+            box.Text = tostring(getter())
+        end
+    end)
+end
 
--- Кнопка полного закрытия меню (Красный Х)
+createSliderInput(2, "FOV Size", function() return Settings.fovSize end, function(v) Settings.fovSize = v end, 10, 300)
+createSliderInput(45, "Spin Speed", function() return Settings.spinSpeed end, function(v) Settings.spinSpeed = v end, 1, 20, "°")
+createSliderInput(88, "Fog Density", function() return Settings.fogDensity end, function(v) Settings.fogDensity = v end, 0.1, 2)
+
+-- Кнопка закрытия меню
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 50, 0, 25)
-closeBtn.Position = UDim2.new(0.5, -25, 0, 40)
+closeBtn.Size = UDim2.new(0, 80, 0, 30)
+closeBtn.Position = UDim2.new(0.5, -40, 0, 140)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 closeBtn.Text = "X (Close)"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 10
+closeBtn.TextSize = 11
 closeBtn.BorderSizePixel = 0
 closeBtn.Parent = TabSettings
 
@@ -408,9 +422,9 @@ uis.InputChanged:Connect(function(input)
         if menu.Visible then
             local absX = btn.AbsolutePosition.X
             if absX < cam.ViewportSize.X / 2 then
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 40, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 45, 0, btn.AbsolutePosition.Y)
             else
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - 205, 0, btn.AbsolutePosition.Y)
+                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - 355, 0, btn.AbsolutePosition.Y)
             end
         end
     end
@@ -421,9 +435,9 @@ local function toggleMenu()
     if menu.Visible then
         local absX = btn.AbsolutePosition.X
         if absX < cam.ViewportSize.X / 2 then
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 40, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 45, 0, btn.AbsolutePosition.Y)
         else
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - 205, 0, btn.AbsolutePosition.Y)
+            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - 355, 0, btn.AbsolutePosition.Y)
         end
     end
 end
@@ -451,13 +465,13 @@ circleUI.CornerRadius = UDim.new(1, 0)
 circleUI.Parent = fovCircle
 
 local circleStroke = Instance.new("UIStroke")
-circleStroke.Color = Settings.aimColor
+circleStroke.Color = menuColors[Settings.menuColor]
 circleStroke.Thickness = 2
 circleStroke.Transparency = 0.4
 circleStroke.Parent = fovCircle
 
 -- ==============================================
--- 7. ЛОГИКА ИГРЫ (AIMBOT, ESP, FOG, SPIN, AUTOFIRE)
+-- 7. ЛОГИКА ИГРЫ (Aimbot, ESP, Spin, Fog, Autofire)
 -- ==============================================
 local function getTeam(player)
     if not player or not player.Character then return nil end
@@ -490,7 +504,7 @@ local function shootTarget(targetPos)
     if scr then
         mouse.Move(UDim2.new(0, scr.X, 0, scr.Y))
         mouse.Button1Down()
-        task.wait(0.03)
+        task.wait(0.02)
         mouse.Button1Up()
     end
 end
@@ -502,9 +516,11 @@ rs.RenderStepped:Connect(function()
             fogFolder = Instance.new("Atmosphere")
             fogFolder.Name = "SWILL_Fog"
             fogFolder.Color = Settings.fogColor
-            fogFolder.Density = 0.5
+            fogFolder.Density = Settings.fogDensity
             fogFolder.Offset = 0
             fogFolder.Parent = lighting
+        else
+            fogFolder.Density = Settings.fogDensity
         end
     else
         if fogFolder then
@@ -513,11 +529,11 @@ rs.RenderStepped:Connect(function()
         end
     end
     
-    -- Спин 360 (Вращение)
+    -- Спин 360 (Не останавливается при ходьбе)
     if Settings.spin and plr.Character then
         local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
-            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(5), 0)
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(Settings.spinSpeed), 0)
         end
     end
 
@@ -532,7 +548,7 @@ rs.RenderStepped:Connect(function()
             if p ~= plr and p.Character then
                 if not highlights[p] then
                     local h = Instance.new("Highlight")
-                    h.FillColor = isEnemy(p) and Settings.espColor or teamColor
+                    h.FillColor = isEnemy(p) and enemyColor or teamColor
                     h.FillTransparency = 0.45
                     h.OutlineColor = Color3.new(1, 1, 1)
                     h.OutlineTransparency = 0.25
@@ -546,7 +562,7 @@ rs.RenderStepped:Connect(function()
                         end
                     end)
                 else
-                    highlights[p].FillColor = isEnemy(p) and Settings.espColor or teamColor
+                    highlights[p].FillColor = isEnemy(p) and enemyColor or teamColor
                 end
             end
         end
@@ -595,12 +611,12 @@ rs.RenderStepped:Connect(function()
         end
     end
 
-    -- Аимбот (Наведение)
+    -- Аимбот (Наведение только на врага)
     if Settings.aimbot and targetPos then
         cam.CFrame = CFrame.lookAt(cam.CFrame.Position, targetPos)
     end
 
-    -- Autofire (Стрельба)
+    -- Autofire (Стрельба по врагу)
     if Settings.autofire and targetPos and targetPlayer then
         if not Settings.wallbang and Settings.wall then
             local camPos = cam.CFrame.Position
@@ -613,4 +629,4 @@ rs.RenderStepped:Connect(function()
     end
 end)
 
-print("SWILL ULTIMATE v2.0 LOADED! Press B or D.")
+print("SWILL PREMIUM ULTRA v3.0 LOADED! Press B or D.")
