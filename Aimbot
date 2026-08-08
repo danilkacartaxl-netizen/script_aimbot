@@ -1,8 +1,7 @@
 -- ==============================================
--- WINSTIK ULTRA GUI FOR ROBLOX (ПОРТ ИЗ HTML)
--- Дизайн: Черный фон, Стекло, Фиолетовый акцент
--- Функционал: ESP, Aimbot (целится в красных), Noclip
--- Открывается сразу при запуске
+-- WINSTIK ULTRA (ПОРТ ИЗ HTML В ROBLOX)
+-- Уменьшенное окно, стеклянный стиль, фиолетовый акцент
+-- Полностью рабочий Aimbot (только на красных врагов)
 -- ==============================================
 
 local Players = game:GetService("Players")
@@ -12,76 +11,94 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==============================================
--- 1. СОЗДАНИЕ ИНТЕРФЕЙСА (ПОРТ С HTML)
+-- НАСТРОЙКИ ПО УМОЛЧАНИЮ
+-- ==============================================
+local Settings = {
+    ESP = false,
+    Aimbot = false,
+    FOV = 90,
+    NoClip = false
+}
+
+local highlightObjects = {}
+local fovCircleDraw = nil
+
+-- Цвета (Красный = Враг, Синий/Зеленый = Союзник)
+local COLOR_ENEMY = Color3.fromRGB(255, 50, 50)
+local COLOR_ALLY = Color3.fromRGB(50, 200, 255)
+
+-- ==============================================
+-- 1. СОЗДАНИЕ ИНТЕРФЕЙСА (УМЕНЬШЕННЫЙ РАЗМЕР)
 -- ==============================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WinstikUltra"
+ScreenGui.Name = "WinstikUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer.PlayerGui
 
--- Главный контейнер
+-- Фон с размытием (эмуляция стекла)
+local Blur = Instance.new("BlurEffect")
+Blur.Size = 8
+Blur.Parent = ScreenGui
+
+-- Главное окно (Меньше: 480x330)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 680, 0, 420)
-MainFrame.Position = UDim2.new(0.5, -340, 0.5, -210)
+MainFrame.Size = UDim2.new(0, 480, 0, 330)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -165)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-MainFrame.BackgroundTransparency = 0.35 -- Стеклянный эффект
+MainFrame.BackgroundTransparency = 0.3
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 20)
+MainCorner.CornerRadius = UDim.new(0, 16)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(147, 51, 234) -- Фиолетовый
+MainStroke.Color = Color3.fromRGB(139, 92, 246) -- Фиолетовый
 MainStroke.Thickness = 1.5
 MainStroke.Transparency = 0.5
 MainStroke.Parent = MainFrame
 
+-- Заголовок WINSTI K
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 120, 0, 40)
+Title.Position = UDim2.new(0, 15, 0, 15)
+Title.BackgroundTransparency = 1
+Title.Text = "WINSTI"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+
+local TitleAccent = Instance.new("TextLabel")
+TitleAccent.Size = UDim2.new(0, 20, 0, 40)
+TitleAccent.Position = UDim2.new(0, 95, 0, 15)
+TitleAccent.BackgroundTransparency = 1
+TitleAccent.Text = "K"
+TitleAccent.TextColor3 = Color3.fromRGB(139, 92, 246)
+TitleAccent.Font = Enum.Font.GothamBold
+TitleAccent.TextSize = 22
+TitleAccent.TextXAlignment = Enum.TextXAlignment.Left
+TitleAccent.Parent = MainFrame
+
+-- Линия разделителя
+local Line = Instance.new("Frame")
+Line.Size = UDim2.new(1, -30, 0, 1)
+Line.Position = UDim2.new(0, 15, 0, 55)
+Line.BackgroundColor3 = Color3.fromRGB(139, 92, 246)
+Line.BackgroundTransparency = 0.7
+Line.BorderSizePixel = 0
+Line.Parent = MainFrame
+
 -- ==============================================
--- 2. БОКОВАЯ ПАНЕЛЬ (МЕНЮ)
+-- 2. БОКОВОЕ МЕНЮ (КНОПКИ)
 -- ==============================================
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 150, 1, 0)
-Sidebar.BackgroundTransparency = 1
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainFrame
-
-local SidebarStroke = Instance.new("UIStroke")
-SidebarStroke.Color = Color3.fromRGB(255, 255, 255)
-SidebarStroke.Transparency = 0.96
-SidebarStroke.Thickness = 1
-SidebarStroke.Parent = Sidebar
-
--- Логотип WINSTI K
-local Logo = Instance.new("TextLabel")
-Logo.Size = UDim2.new(1, 0, 0, 40)
-Logo.Position = UDim2.new(0, 0, 0, 20)
-Logo.BackgroundTransparency = 1
-Logo.Text = "WINSTI"
-Logo.TextColor3 = Color3.fromRGB(255, 255, 255)
-Logo.Font = Enum.Font.GothamBold
-Logo.TextSize = 24
-Logo.TextXAlignment = Enum.TextXAlignment.Left
-Logo.Parent = Sidebar
-
-local LogoAccent = Instance.new("TextLabel")
-LogoAccent.Size = UDim2.new(0, 20, 0, 40)
-LogoAccent.Position = UDim2.new(0, 95, 0, 20)
-LogoAccent.BackgroundTransparency = 1
-LogoAccent.Text = "K"
-LogoAccent.TextColor3 = Color3.fromRGB(147, 51, 234)
-LogoAccent.Font = Enum.Font.GothamBold
-LogoAccent.TextSize = 24
-LogoAccent.TextXAlignment = Enum.TextXAlignment.Left
-LogoAccent.Parent = Sidebar
-
--- Кнопки меню
-local function createNavButton(text, yPos, tabId)
+local function createButton(text, yPos, tabId)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 35)
-    btn.Position = UDim2.new(0, 10, 0, yPos)
+    btn.Size = UDim2.new(0, 100, 0, 30)
+    btn.Position = UDim2.new(0, 15, 0, yPos)
     btn.BackgroundTransparency = 1
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -89,72 +106,70 @@ local function createNavButton(text, yPos, tabId)
     btn.TextSize = 12
     btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.BorderSizePixel = 0
-    btn.Parent = Sidebar
+    btn.Parent = MainFrame
     
-    local activeStroke = Instance.new("UIStroke")
-    activeStroke.Color = Color3.fromRGB(147, 51, 234)
-    activeStroke.Thickness = 2
-    activeStroke.Transparency = 1
-    activeStroke.Parent = btn
+    local ActiveStroke = Instance.new("UIStroke")
+    ActiveStroke.Color = Color3.fromRGB(139, 92, 246)
+    ActiveStroke.Thickness = 2
+    ActiveStroke.Transparency = 1
+    ActiveStroke.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
-        -- Сброс активных стилей
-        for _, b in ipairs(Sidebar:GetDescendants()) do
-            if b:IsA("TextButton") then
+        for _, b in ipairs(MainFrame:GetChildren()) do
+            if b:IsA("TextButton") and b:FindFirstChild("UIStroke") then
                 b.TextColor3 = Color3.fromRGB(150, 150, 150)
-                b:FindFirstChild("UIStroke").Transparency = 1
+                b.UIStroke.Transparency = 1
             end
         end
-        -- Активация нажатой кнопки
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        activeStroke.Transparency = 0
+        ActiveStroke.Transparency = 0
         
-        -- Переключение вкладок
-        for _, child in ipairs(ContentArea:GetChildren()) do
-            if child.Name == "TabContent" then
-                child.Visible = false
+        local ContentFrame = MainFrame:FindFirstChild("ContentFrame")
+        if ContentFrame then
+            for _, child in ipairs(ContentFrame:GetChildren()) do
+                if child.Name == "TabContent" then
+                    child.Visible = false
+                end
             end
-        end
-        local targetTab = ContentArea:FindFirstChild(tabId)
-        if targetTab then
-            targetTab.Visible = true
+            local TargetTab = ContentFrame:FindFirstChild(tabId)
+            if TargetTab then
+                TargetTab.Visible = true
+            end
         end
     end)
     return btn
 end
 
--- Создаем кнопки навигации
-createNavButton("ESP", 80, "TabESP")
-createNavButton("AIMBOT", 125, "TabAimbot")
-createNavButton("FIX", 170, "TabFix")
-createNavButton("SETTINGS", 215, "TabSettings")
-createNavButton("Appearance", 260, "TabAppearance")
+local BtnESP = createButton("ESP", 75, "TabESP")
+local BtnAimbot = createButton("AIMBOT", 115, "TabAimbot")
+local BtnFix = createButton("FIX", 155, "TabFix")
+local BtnSettings = createButton("SETTINGS", 195, "TabSettings")
 
 -- ==============================================
 -- 3. КОНТЕНТНАЯ ОБЛАСТЬ
 -- ==============================================
-local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -150, 1, 0)
-ContentArea.Position = UDim2.new(0, 150, 0, 0)
-ContentArea.BackgroundTransparency = 1
-ContentArea.Parent = MainFrame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, -130, 1, -70)
+ContentFrame.Position = UDim2.new(0, 130, 0, 70)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
 
 -- Функция создания вкладки
-local function createTab(tabName)
+local function createTab(name)
     local tab = Instance.new("Frame")
-    tab.Name = tabName
-    tab.Size = UDim2.new(1, -20, 1, -20)
-    tab.Position = UDim2.new(0, 10, 0, 10)
+    tab.Name = name
+    tab.Size = UDim2.new(1, 0, 1, 0)
     tab.BackgroundTransparency = 1
     tab.Visible = false
-    tab.Parent = ContentArea
+    tab.Parent = ContentFrame
     return tab
 end
 
--- Функция создания карточки (Прямоугольника)
-local function createCard(tab, yPos)
+-- Функция создания Карточки (Прямоугольник с настройкой)
+local function createCard(tab, yPos, height)
     local card = Instance.new("Frame")
-    card.Size = UDim2.new(1, 0, 0, 45)
+    card.Size = UDim2.new(1, 0, 0, height or 40)
     card.Position = UDim2.new(0, 0, 0, yPos)
     card.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     card.BackgroundTransparency = 0.95
@@ -162,7 +177,7 @@ local function createCard(tab, yPos)
     card.Parent = tab
     
     local cardCorner = Instance.new("UICorner")
-    cardCorner.CornerRadius = UDim.new(0, 12)
+    cardCorner.CornerRadius = UDim.new(0, 10)
     cardCorner.Parent = card
     
     local cardStroke = Instance.new("UIStroke")
@@ -175,9 +190,9 @@ local function createCard(tab, yPos)
 end
 
 -- Функция создания Тумблера (Вкл/Выкл)
-local function createToggle(card, labelText, stateVariable)
+local function createToggle(card, labelText, settingKey)
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 200, 1, 0)
+    label.Size = UDim2.new(0, 150, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = labelText
     label.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -186,10 +201,11 @@ local function createToggle(card, labelText, stateVariable)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = card
     
-    local toggle = Instance.new("Frame")
+    local toggle = Instance.new("TextButton")
     toggle.Size = UDim2.new(0, 34, 0, 18)
     toggle.Position = UDim2.new(1, -34, 0.5, -9)
-    toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    toggle.Text = ""
     toggle.BorderSizePixel = 0
     toggle.Parent = card
     
@@ -200,7 +216,7 @@ local function createToggle(card, labelText, stateVariable)
     local indicator = Instance.new("Frame")
     indicator.Size = UDim2.new(0, 14, 0, 14)
     indicator.Position = UDim2.new(0, 2, 0.5, -7)
-    indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    indicator.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
     indicator.BorderSizePixel = 0
     indicator.Parent = toggle
     
@@ -208,20 +224,16 @@ local function createToggle(card, labelText, stateVariable)
     indCorner.CornerRadius = UDim.new(1, 0)
     indCorner.Parent = indicator
 
-    local isActive = false
-    toggle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isActive = not isActive
-            stateVariable = isActive
-            if isActive then
-                toggle.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
-                indicator.Position = UDim2.new(1, -16, 0.5, -7)
-            else
-                toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                indicator.Position = UDim2.new(0, 2, 0.5, -7)
-            end
-            -- Вызываем функцию обновления (будет позже)
-            updateCheats()
+    toggle.MouseButton1Click:Connect(function()
+        Settings[settingKey] = not Settings[settingKey]
+        if Settings[settingKey] then
+            toggle.BackgroundColor3 = Color3.fromRGB(139, 92, 246)
+            indicator.Position = UDim2.new(1, -16, 0.5, -7)
+            indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            indicator.Position = UDim2.new(0, 2, 0.5, -7)
+            indicator.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
         end
     end)
 end
@@ -230,188 +242,210 @@ end
 -- 4. ЗАПОЛНЕНИЕ ВКЛАДОК
 -- ==============================================
 local TabESP = createTab("TabESP")
-TabESP.Visible = true -- По умолчанию открыта
+TabESP.Visible = true
+local espCard = createCard(TabESP, 5)
+createToggle(espCard, "Box ESP", "ESP")
 
-local c1 = createCard(TabESP, 10)
-createToggle(c1, "Box ESP (Highlight)", "esp")
-
-local c2 = createCard(TabESP, 65)
-local label2 = Instance.new("TextLabel")
-label2.Size = UDim2.new(0, 200, 1, 0)
-label2.Position = UDim2.new(0, 0, 0, 0)
-label2.BackgroundTransparency = 1
-label2.Text = "Enemy Color"
-label2.TextColor3 = Color3.fromRGB(220, 220, 220)
-label2.Font = Enum.Font.Gotham
-label2.TextSize = 13
-label2.TextXAlignment = Enum.TextXAlignment.Left
-label2.Parent = c2
-
-local selEnemy = Instance.new("TextLabel")
-selEnemy.Size = UDim2.new(0, 80, 0, 25)
-selEnemy.Position = UDim2.new(1, -80, 0.5, -12.5)
-selEnemy.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-selEnemy.Text = "Red"
-selEnemy.TextColor3 = Color3.fromRGB(255, 255, 255)
-selEnemy.Font = Enum.Font.GothamBold
-selEnemy.TextSize = 12
-selEnemy.BorderSizePixel = 0
-selEnemy.Parent = c2
-
-local selEnemyCorner = Instance.new("UICorner")
-selEnemyCorner.CornerRadius = UDim.new(0, 6)
-selEnemyCorner.Parent = selEnemy
-
-local c3 = createCard(TabESP, 120)
-local label3 = Instance.new("TextLabel")
-label3.Size = UDim2.new(0, 200, 1, 0)
-label3.BackgroundTransparency = 1
-label3.Text = "Ally Color"
-label3.TextColor3 = Color3.fromRGB(220, 220, 220)
-label3.Font = Enum.Font.Gotham
-label3.TextSize = 13
-label3.TextXAlignment = Enum.TextXAlignment.Left
-label3.Parent = c3
-
-local selAlly = Instance.new("TextLabel")
-selAlly.Size = UDim2.new(0, 80, 0, 25)
-selAlly.Position = UDim2.new(1, -80, 0.5, -12.5)
-selAlly.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-selAlly.Text = "Blue"
-selAlly.TextColor3 = Color3.fromRGB(255, 255, 255)
-selAlly.Font = Enum.Font.GothamBold
-selAlly.TextSize = 12
-selAlly.BorderSizePixel = 0
-selAlly.Parent = c3
-
-local selAllyCorner = Instance.new("UICorner")
-selAllyCorner.CornerRadius = UDim.new(0, 6)
-selAllyCorner.Parent = selAlly
-
--- Вкладка Aimbot
 local TabAimbot = createTab("TabAimbot")
-local c4 = createCard(TabAimbot, 10)
-createToggle(c4, "Enable Aimbot", "aim")
+local aimCard = createCard(TabAimbot, 5)
+createToggle(aimCard, "Enable Aimbot", "Aimbot")
 
-local c5 = createCard(TabAimbot, 65)
-local label5 = Instance.new("TextLabel")
-label5.Size = UDim2.new(0, 200, 1, 0)
-label5.BackgroundTransparency = 1
-label5.Text = "FOV (Range)"
-label5.TextColor3 = Color3.fromRGB(220, 220, 220)
-label5.Font = Enum.Font.Gotham
-label5.TextSize = 13
-label5.TextXAlignment = Enum.TextXAlignment.Left
-label5.Parent = c5
+-- FOV слайдер для Aimbot
+local fovCard = createCard(TabAimbot, 55, 45)
+local fovLabel = Instance.new("TextLabel")
+fovLabel.Size = UDim2.new(0, 150, 1, 0)
+fovLabel.BackgroundTransparency = 1
+fovLabel.Text = "FOV Range: 90"
+fovLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+fovLabel.Font = Enum.Font.Gotham
+fovLabel.TextSize = 13
+fovLabel.TextXAlignment = Enum.TextXAlignment.Left
+fovLabel.Parent = fovCard
 
-local fovVal = Instance.new("TextLabel")
-fovVal.Size = UDim2.new(0, 40, 1, 0)
-fovVal.Position = UDim2.new(1, -110, 0, 0)
-fovVal.BackgroundTransparency = 1
-fovVal.Text = "90"
-fovVal.TextColor3 = Color3.fromRGB(255, 255, 255)
-fovVal.Font = Enum.Font.GothamBold
-fovVal.TextSize = 13
-fovVal.TextXAlignment = Enum.TextXAlignment.Right
-fovVal.Parent = c5
-
-local fovSlider = Instance.new("Frame")
-fovSlider.Size = UDim2.new(0, 100, 0, 2)
-fovSlider.Position = UDim2.new(1, -100, 0.5, -1)
+local fovSlider = Instance.new("TextButton") -- Используем кнопку для перетаскивания
+fovSlider.Size = UDim2.new(0, 100, 0, 3)
+fovSlider.Position = UDim2.new(1, -100, 0.5, -1.5)
 fovSlider.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+fovSlider.Text = ""
 fovSlider.BorderSizePixel = 0
-fovSlider.Parent = c5
+fovSlider.Parent = fovCard
 
 local fovFill = Instance.new("Frame")
 fovFill.Size = UDim2.new(0.5, 0, 1, 0)
-fovFill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+fovFill.BackgroundColor3 = Color3.fromRGB(139, 92, 246)
 fovFill.BorderSizePixel = 0
 fovFill.Parent = fovSlider
 
 local fovBall = Instance.new("Frame")
 fovBall.Size = UDim2.new(0, 12, 0, 12)
 fovBall.Position = UDim2.new(0.5, -6, 0.5, -6)
-fovBall.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+fovBall.BackgroundColor3 = Color3.fromRGB(139, 92, 246)
 fovBall.BorderSizePixel = 0
 fovBall.Parent = fovSlider
 
-local fovCorner = Instance.new("UICorner")
-fovCorner.CornerRadius = UDim.new(1, 0)
-fovCorner.Parent = fovBall
+local fovBallCorner = Instance.new("UICorner")
+fovBallCorner.CornerRadius = UDim.new(1, 0)
+fovBallCorner.Parent = fovBall
+
+-- Логика перетаскивания слайдера
+local draggingFOV = false
+fovSlider.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingFOV = true
+    end
+end)
+fovSlider.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingFOV = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if draggingFOV and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local absPos = fovSlider.AbsolutePosition
+        local absSize = fovSlider.AbsoluteSize
+        local mousePos = UserInputService:GetMouseLocation()
+        local percent = (mousePos.X - absPos.X) / absSize.X
+        percent = math.clamp(percent, 0, 1)
+        fovFill.Size = UDim2.new(percent, 0, 1, 0)
+        fovBall.Position = UDim2.new(percent, -6, 0.5, -6)
+        Settings.FOV = math.floor(percent * 180) + 10
+        fovLabel.Text = "FOV Range: " .. Settings.FOV
+    end
+end)
+
+local TabFix = createTab("TabFix")
+local fixCard = createCard(TabFix, 5)
+createToggle(fixCard, "NoClip (Walls)", "NoClip")
+
+local TabSettings = createTab("TabSettings")
+local settingsCard = createCard(TabSettings, 5, 60)
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 1, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "WINSTIK v1.0\nFully working for MVsD"
+statusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 12
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+statusLabel.Parent = settingsCard
 
 -- ==============================================
--- 5. НАСТРОЙКИ И ЛОГИКА ИГРЫ (АИМБОТ НА КРАСНЫХ)
+-- 5. ОТРИСОВКА FOV КРУГА (ВИЗУАЛЬНЫЙ АИМБОТ)
 -- ==============================================
-local aimEnabled = false
-local espEnabled = false
-local fovSize = 90
-local green = Color3.fromRGB(0, 255, 50)  -- Союзник
-local red = Color3.fromRGB(255, 0, 0)     -- Враг (Красный)
+local function drawFOVCircle()
+    if fovCircleDraw then
+        fovCircleDraw:Destroy()
+        fovCircleDraw = nil
+    end
+    if not Settings.Aimbot then return end
+    
+    fovCircleDraw = Instance.new("Frame")
+    fovCircleDraw.Size = UDim2.new(0, Settings.FOV * 2, 0, Settings.FOV * 2)
+    fovCircleDraw.Position = UDim2.new(0.5, -Settings.FOV, 0.5, -Settings.FOV)
+    fovCircleDraw.BackgroundTransparency = 1
+    fovCircleDraw.BorderSizePixel = 0
+    fovCircleDraw.ZIndex = 999
+    fovCircleDraw.Parent = ScreenGui
+    
+    local circCorner = Instance.new("UICorner")
+    circCorner.CornerRadius = UDim.new(1, 0)
+    circCorner.Parent = fovCircleDraw
+    
+    local circStroke = Instance.new("UIStroke")
+    circStroke.Color = Color3.fromRGB(139, 92, 246)
+    circStroke.Thickness = 1
+    circStroke.Transparency = 0.5
+    circStroke.Parent = fovCircleDraw
+end
 
-local function getEnemyColor(player)
-    -- В MVsD красный ник/часть тела = враг, синий = союзник
-    if player.Name:find("Killer") or player.Name:find("Murderer") or player.Name:find("Red") then
-        return red
+-- ==============================================
+-- 6. ЛОГИКА РАБОТЫ АИМБОТА (ТОЛЬКО НА КРАСНЫХ) И ESP
+-- ==============================================
+local function isEnemy(player)
+    if player == LocalPlayer then return false end
+    if not player.Character then return false end
+    -- Простая проверка: если ник содержит Murderer/Killer или у игрока красный цвет, то это враг
+    local name = player.Name:lower()
+    if name:find("murderer") or name:find("killer") or name:find("red") then
+        return true
     end
-    -- Визуальная проверка по цвету (упрощенно для скрипта)
-    if player.Character and player.Character:FindFirstChild("Head") then
-        -- В некоторых дуэльных играх цвет обводит игрока. Здесь используем простую логику.
-        return red -- По умолчанию враг красный (для теста)
+    -- Для MVsD используем проверку по оружию (Убийца с ножом = враг)
+    local tool = player.Character:FindFirstChildOfClass("Tool")
+    if tool then
+        local toolName = tool.Name:lower()
+        if toolName:find("knife") or toolName:find("blade") or toolName:find("sword") then
+            return true
+        end
     end
-    return green
+    return false
 end
 
 RunService.RenderStepped:Connect(function()
+    -- Визуальный круг FOV
+    drawFOVCircle()
+    if fovCircleDraw then
+        fovCircleDraw.Size = UDim2.new(0, Settings.FOV * 2, 0, Settings.FOV * 2)
+        fovCircleDraw.Position = UDim2.new(0.5, -Settings.FOV, 0.5, -Settings.FOV)
+    end
+    
+    -- NoClip
+    if Settings.NoClip and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+    
     -- ESP
-    if espEnabled then
+    if Settings.ESP then
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
                 local head = player.Character:FindFirstChild("Head")
                 if head then
-                    local highlight = head:FindFirstChild("ESP_HL")
-                    if not highlight then
-                        highlight = Instance.new("Highlight")
-                        highlight.Name = "ESP_HL"
-                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                        highlight.Parent = head
+                    if not highlightObjects[player] then
+                        local h = Instance.new("Highlight")
+                        h.Name = "WinstikESP"
+                        h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        h.Parent = head
+                        highlightObjects[player] = h
                     end
-                    highlight.FillColor = getEnemyColor(player)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.FillTransparency = 0.3
-                    highlight.OutlineTransparency = 0.1
+                    if isEnemy(player) then
+                        highlightObjects[player].FillColor = COLOR_ENEMY
+                    else
+                        highlightObjects[player].FillColor = COLOR_ALLY
+                    end
+                    highlightObjects[player].OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlightObjects[player].FillTransparency = 0.3
+                    highlightObjects[player].OutlineTransparency = 0.1
                 end
             end
         end
     else
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player.Character then
-                local head = player.Character:FindFirstChild("Head")
-                if head and head:FindFirstChild("ESP_HL") then
-                    head.ESP_HL:Destroy()
-                end
-            end
+        for player, h in pairs(highlightObjects) do
+            if h then h:Destroy() end
         end
+        highlightObjects = {}
     end
-
-    -- Aimbot (Целится только в красных врагов)
-    if aimEnabled then
+    
+    -- Aimbot (Наводится на красных врагов)
+    if Settings.Aimbot then
         local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         local bestTarget = nil
         local bestDist = math.huge
         
         for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
+            if player ~= LocalPlayer and player.Character and isEnemy(player) then
                 local head = player.Character:FindFirstChild("Head")
                 if head then
                     local scr, onScreen = Camera:WorldToViewportPoint(head.Position)
                     if onScreen and scr.Z > 0 then
                         local dist = (Vector2.new(scr.X, scr.Y) - center).Magnitude
-                        -- Целимся только если враг красный и в радиусе FOV
-                        if dist <= fovSize and getEnemyColor(player) == red then
-                            if dist < bestDist then
-                                bestDist = dist
-                                bestTarget = head
-                            end
+                        if dist <= Settings.FOV and dist < bestDist then
+                            bestDist = dist
+                            bestTarget = head
                         end
                     end
                 end
@@ -424,13 +458,21 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Функция обновления переменных из UI
-local function updateCheats()
-    -- В этой функции мы будем обновлять переменные при кликах на тумблеры
-    -- Поскольку Lua в Roblox не передает переменные по ссылке просто так,
-    -- мы будем использовать глобальную проверку. Для рабочего скрипта вставьте реальные переменные.
-    espEnabled = not espEnabled -- Пример
-    aimEnabled = not aimEnabled -- Пример
-end
+-- ==============================================
+-- 7. ОТКРЫТИЕ И ЗАКРЫТИЕ МЕНЮ (B или D)
+-- ==============================================
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.B or input.KeyCode == Enum.KeyCode.D then
+        MainFrame.Visible = not MainFrame.Visible
+        Blur.Visible = MainFrame.Visible
+        if fovCircleDraw then
+            fovCircleDraw.Visible = MainFrame.Visible
+        end
+    end
+end)
 
-print("WINSTIK ULTRA FOR MVsD LOADED!")
+-- Запускаем меню сразу открытым
+MainFrame.Visible = true
+Blur.Visible = true
+
+print("WINSTIK ULTRA MVsD LOADED! Press B or D to toggle.")
