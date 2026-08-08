@@ -1,7 +1,6 @@
 -- ==============================================
--- WINSTIK MVsD v1.0
--- Минималистичное меню с голубым акцентом
--- Aimbot + ESP (Boxes, Trails, Health, Names)
+-- WINSTIK MVsD v2.0 (УЛУЧШЕННЫЙ)
+-- Красивые боксы-очертания, трассеры, Wallhack
 -- ==============================================
 
 local plr = game.Players.LocalPlayer
@@ -24,6 +23,7 @@ local Settings = {
     ShowHealth = true,
     ShowNames = true,
     TeamCheck = true,
+    Wallhack = true,
     Smooth = 0.2,
     FOV = 200
 }
@@ -40,11 +40,12 @@ local COLORS = {
     White = Color3.fromRGB(255, 255, 255),
     Black = Color3.fromRGB(10, 10, 10),
     Dark = Color3.fromRGB(5, 5, 5),
-    Gray = Color3.fromRGB(40, 40, 40)
+    Gray = Color3.fromRGB(40, 40, 40),
+    Transparent = Color3.fromRGB(255, 255, 255)
 }
 
 -- ==============================================
--- ГЛАВНОЕ МЕНЮ (МИНИМАЛИСТИЧНОЕ)
+-- ГЛАВНОЕ МЕНЮ
 -- ==============================================
 local gui = Instance.new("ScreenGui")
 gui.Name = "WINSTIK"
@@ -131,7 +132,7 @@ scroll.Position = UDim2.new(0, 0, 0, 35)
 scroll.BackgroundTransparency = 1
 scroll.ScrollBarThickness = 2
 scroll.ScrollBarImageColor3 = COLORS.Blue
-scroll.CanvasSize = UDim2.new(0, 0, 0, 320)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 340)
 scroll.Parent = menu
 
 -- ==============================================
@@ -296,16 +297,19 @@ y = y + 30
 createToggle(y, "ESP", "ESP")
 y = y + 30
 
-createToggle(y, "Boxes 2D", "ShowBoxes")
+createToggle(y, "Boxes (Outline)", "ShowBoxes")
 y = y + 30
 
-createToggle(y, "Trails", "ShowTrails")
+createToggle(y, "Trails (Tracers)", "ShowTrails")
 y = y + 30
 
 createToggle(y, "Health Bar", "ShowHealth")
 y = y + 30
 
 createToggle(y, "Names", "ShowNames")
+y = y + 30
+
+createToggle(y, "Wallhack", "Wallhack")
 y = y + 34
 
 createSlider(y, "Smooth", "Smooth", 0.05, 0.5, "")
@@ -365,7 +369,7 @@ uis.InputBegan:Connect(function(input)
 end)
 
 -- ==============================================
--- ИГРОВАЯ ЛОГИКА (Aimbot + ESP)
+-- ИГРОВАЯ ЛОГИКА
 -- ==============================================
 local function isEnemy(target)
     if target == plr then return false end
@@ -411,7 +415,7 @@ rs.RenderStepped:Connect(function()
     end
 end)
 
--- ESP
+-- ESP (Boxes 2D с очертаниями, трассеры, Wallhack)
 rs.RenderStepped:Connect(function()
     if not Settings.ESP then
         for _, data in pairs(espObjects) do
@@ -433,47 +437,39 @@ rs.RenderStepped:Connect(function()
             folder.Name = "ESP_" .. p.Name
             folder.Parent = char
             
-            -- Box 2D
+            -- Box 2D с очертаниями (красивый)
             if Settings.ShowBoxes then
                 local box = Instance.new("BoxHandleAdornment")
-                box.Size = Vector3.new(3, 5, 1)
+                box.Size = Vector3.new(3.2, 5.2, 1.2)
                 box.Adornee = char
                 box.Color3 = color
-                box.Transparency = 0.3
-                box.AlwaysOnTop = true
+                box.Transparency = 0.15
+                box.AlwaysOnTop = Settings.Wallhack
                 box.Parent = folder
+                
+                -- Второй слой для очертания
+                local outline = Instance.new("BoxHandleAdornment")
+                outline.Size = Vector3.new(3.4, 5.4, 1.4)
+                outline.Adornee = char
+                outline.Color3 = COLORS.Black
+                outline.Transparency = 0.5
+                outline.AlwaysOnTop = Settings.Wallhack
+                outline.ZIndex = -1
+                outline.Parent = folder
             end
             
-            -- Trails (линии до тела)
+            -- Trails (линии от центра экрана до игрока)
             if Settings.ShowTrails then
-                local function createLine(part1, part2)
-                    if not part1 or not part2 then return end
-                    local line = Instance.new("LineHandleAdornment")
-                    line.Adornee = char
-                    line.Point1 = part1.Position
-                    line.Point2 = part2.Position
-                    line.Color3 = color
-                    line.Thickness = 1.5
-                    line.Transparency = 0.3
-                    line.AlwaysOnTop = true
-                    line.Parent = folder
-                    return line
-                end
-                
-                local head = char:FindFirstChild("Head")
-                local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-                local la = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
-                local ra = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
-                local ll = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftLowerLeg")
-                local rl = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightLowerLeg")
-                
-                if head and torso then
-                    createLine(head, torso)
-                    if la then createLine(torso, la) end
-                    if ra then createLine(torso, ra) end
-                    if ll then createLine(torso, ll) end
-                    if rl then createLine(torso, rl) end
-                end
+                local trail = Instance.new("LineHandleAdornment")
+                trail.Adornee = char
+                trail.Point1 = cam.CFrame.Position
+                trail.Point2 = char:FindFirstChild("Head").Position
+                trail.Color3 = color
+                trail.Thickness = 1.5
+                trail.Transparency = 0.4
+                trail.AlwaysOnTop = Settings.Wallhack
+                trail.Parent = folder
+                trailLines[p] = trail
             end
             
             -- Health Bar
@@ -481,7 +477,7 @@ rs.RenderStepped:Connect(function()
                 local hGui = Instance.new("BillboardGui")
                 hGui.Adornee = char:FindFirstChild("Head")
                 hGui.Size = UDim2.new(0, 40, 0, 4)
-                hGui.StudsOffset = Vector3.new(0, 2, 0)
+                hGui.StudsOffset = Vector3.new(0, 2.5, 0)
                 hGui.Parent = folder
                 
                 local bg = Instance.new("Frame")
@@ -509,13 +505,29 @@ rs.RenderStepped:Connect(function()
             end
         end
         
-        -- Обновление цвета
+        -- Обновление цвета и Wallhack
         local enemy = isEnemy(p)
         local color = enemy and COLORS.Enemy or COLORS.Ally
+        
         for _, child in ipairs(data.Folder:GetChildren()) do
             if child:IsA("Adornment") then
                 child.Color3 = color
+                child.AlwaysOnTop = Settings.Wallhack
+                
+                -- Обновление трассеров
+                if child:IsA("LineHandleAdornment") and child ~= trailLines[p] then
+                    child.Point1 = cam.CFrame.Position
+                    child.Point2 = char:FindFirstChild("Head") and char.Head.Position or char.PrimaryPart.Position
+                end
             end
+        end
+        
+        -- Обновление трассеров отдельно
+        if Settings.ShowTrails and trailLines[p] then
+            trailLines[p].Point1 = cam.CFrame.Position
+            trailLines[p].Point2 = char:FindFirstChild("Head") and char.Head.Position or char.PrimaryPart.Position
+            trailLines[p].Color3 = color
+            trailLines[p].AlwaysOnTop = Settings.Wallhack
         end
     end
     
@@ -523,10 +535,14 @@ rs.RenderStepped:Connect(function()
     for p, data in pairs(espObjects) do
         if not p.Character or not p.Character.Parent then
             data.Folder:Destroy()
+            if trailLines[p] then
+                trailLines[p] = nil
+            end
             espObjects[p] = nil
         end
     end
 end)
 
-print("WINSTIK MVsD v1.0 LOADED!")
+print("WINSTIK MVsD v2.0 LOADED!")
 print("Нажми B или D для открытия меню")
+print("Включи Wallhack для видимости сквозь стены")
