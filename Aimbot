@@ -1,10 +1,11 @@
 -- ==============================================
--- SWILL MM2 (Murder Mystery 2) FULL
+-- SWILL MM2 ULTRA MENU (Улучшенная версия)
 -- ESP: Green = Innocent, Red = Murderer, Blue = Sheriff
--- Weapon Highlight (оружие на земле и в руках)
--- Aimbot (только на Murderer и Sheriff)
--- NoClip + AutoKill (только за Murderer)
--- Menu: B или D
+-- Weapon Highlight (Оружие на земле)
+-- Aimbot (Только для Шерифа и Убийцы с оружием)
+-- AutoKill (Только для Убийцы)
+-- NoClip (Сквозь стены)
+-- Menu: B или D (Или кнопка SW)
 -- ==============================================
 
 local plr = game.Players.LocalPlayer
@@ -14,129 +15,271 @@ local rs = game:GetService("RunService")
 local uis = game:GetService("UserInputService")
 local players = game:GetService("Players")
 
--- GUI
+-- Настройки по умолчанию
+local settings = {
+    Aimbot = false,
+    ESP = false,
+    WeaponESP = false,
+    NoClip = false,
+    AutoKill = false,
+    FOV = 120
+}
+
+-- Переменные для хранения хайлайтов
+local highlights = {}
+local weaponHighlights = {}
+local aimTarget = nil
+
+-- Цвета ролей для ESP
+local roleColors = {
+    Innocent = Color3.fromRGB(0, 255, 50),
+    Murderer = Color3.fromRGB(255, 0, 0),
+    Sheriff = Color3.fromRGB(50, 50, 255)
+}
+
+-- ==============================================
+-- СОЗДАНИЕ ИНТЕРФЕЙСА (MENU)
+-- ==============================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "SWILL_MM2"
+gui.Name = "SWILL_MM2_UI"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = plr.PlayerGui
 
--- FOV Circle
-local fovCircle = Instance.new("Frame")
-fovCircle.Name = "FOVCircle"
-fovCircle.BackgroundTransparency = 1
-fovCircle.BorderSizePixel = 0
-fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-fovCircle.Position = UDim2.new(0.5, 0, 0.5, -27)
-fovCircle.Size = UDim2.new(0, 180, 0, 180)
-fovCircle.Visible = false
-fovCircle.Parent = gui
+-- Фон интерфейса (Стеклянный эффект)
+local menuFrame = Instance.new("Frame")
+menuFrame.Size = UDim2.new(0, 320, 0, 350)
+menuFrame.Position = UDim2.new(0.5, -160, 0.5, -175)
+menuFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+menuFrame.BackgroundTransparency = 0.15
+menuFrame.BorderSizePixel = 0
+menuFrame.Visible = false
+menuFrame.Parent = gui
 
-local circleUI = Instance.new("UICorner")
-circleUI.CornerRadius = UDim.new(1, 0)
-circleUI.Parent = fovCircle
+-- Скругление углов
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.Parent = menuFrame
 
-local circleStroke = Instance.new("UIStroke")
-circleStroke.Color = Color3.fromRGB(255, 50, 50)
-circleStroke.Thickness = 2
-circleStroke.LineJoinMode = Enum.LineJoinMode.Round
-circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-circleStroke.Parent = fovCircle
+-- Тонкая обводка (Фиолетовая)
+local menuStroke = Instance.new("UIStroke")
+menuStroke.Color = Color3.fromRGB(147, 51, 234)
+menuStroke.Thickness = 1.5
+menuStroke.Transparency = 0.6
+menuStroke.Parent = menuFrame
 
--- Menu Button
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0, 34, 0, 34)
-btn.Position = UDim2.new(0, 14, 0, 14)
-btn.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-btn.TextColor3 = Color3.new(1, 0.2, 0.2)
-btn.Text = "SW"
-btn.Font = Enum.Font.SourceSansBold
-btn.TextSize = 13
-btn.BorderSizePixel = 0
-btn.Parent = gui
+-- Размытие фона (Glassmorphism)
+local blur = Instance.new("BlurEffect")
+blur.Size = 8
+blur.Parent = menuFrame
+
+-- Кнопка открытия меню (SW)
+local openBtn = Instance.new("TextButton")
+openBtn.Size = UDim2.new(0, 40, 0, 40)
+openBtn.Position = UDim2.new(0, 15, 0, 15)
+openBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+openBtn.BackgroundTransparency = 0.2
+openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBtn.Text = "SW"
+openBtn.Font = Enum.Font.SourceSansBold
+openBtn.TextSize = 14
+openBtn.BorderSizePixel = 0
+openBtn.Parent = gui
 
 local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 10)
-btnCorner.Parent = btn
+btnCorner.Parent = openBtn
 
--- Menu Frame
-local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0, 190, 0, 250)
-menu.BackgroundColor3 = Color3.new(0.06, 0.06, 0.06)
-menu.BorderSizePixel = 1
-menu.BorderColor3 = Color3.new(0.8, 0.1, 0.1)
-menu.Visible = false
-menu.Parent = gui
+local btnStroke = Instance.new("UIStroke")
+btnStroke.Color = Color3.fromRGB(147, 51, 234)
+btnStroke.Thickness = 1
+btnStroke.Transparency = 0.8
+btnStroke.Parent = openBtn
 
-local menuCorner = Instance.new("UICorner")
-menuCorner.CornerRadius = UDim.new(0, 10)
-menuCorner.Parent = menu
+-- Кнопка закрытия
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0, 10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+closeBtn.BackgroundTransparency = 0.2
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 14
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = menuFrame
 
--- Separators
-local function addSeparator(y, text)
-    local sep = Instance.new("TextLabel")
-    sep.Size = UDim2.new(0, 170, 0, 14)
-    sep.Position = UDim2.new(0, 10, 0, y)
-    sep.Text = text
-    sep.TextColor3 = Color3.new(0.6, 0.1, 0.1)
-    sep.BackgroundTransparency = 1
-    sep.Font = Enum.Font.SourceSansBold
-    sep.TextSize = 11
-    sep.TextXAlignment = Enum.TextXAlignment.Left
-    sep.Parent = menu
-    return sep
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeBtn
+
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -20, 0, 40)
+title.Position = UDim2.new(0, 10, 0, 10)
+title.BackgroundTransparency = 1
+title.Text = "WINSTIK"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 24
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = menuFrame
+
+local titleAccent = Instance.new("TextLabel")
+titleAccent.Size = UDim2.new(0, 15, 0, 40)
+titleAccent.Position = UDim2.new(0, 105, 0, 10)
+titleAccent.BackgroundTransparency = 1
+titleAccent.Text = "$"
+titleAccent.TextColor3 = Color3.fromRGB(147, 51, 234)
+titleAccent.Font = Enum.Font.SourceSansBold
+titleAccent.TextSize = 24
+titleAccent.TextXAlignment = Enum.TextXAlignment.Left
+titleAccent.Parent = menuFrame
+
+-- Линия разделителя
+local line = Instance.new("Frame")
+line.Size = UDim2.new(1, -20, 0, 1)
+line.Position = UDim2.new(0, 10, 0, 50)
+line.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+line.BackgroundTransparency = 0.5
+line.BorderSizePixel = 0
+line.Parent = menuFrame
+
+-- ==============================================
+-- ФУНКЦИЯ СОЗДАНИЯ ПЕРЕКЛЮЧАТЕЛЕЙ (TOGGLES)
+-- ==============================================
+local function createToggle(yPos, labelText, settingKey)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -20, 0, 30)
+    container.Position = UDim2.new(0, 10, 0, yPos)
+    container.BackgroundTransparency = 1
+    container.Parent = menuFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 150, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    -- Тумблер (Кнопка вкл/выкл)
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 40, 0, 20)
+    toggleBtn.Position = UDim2.new(1, -40, 0.5, -10)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    toggleBtn.Text = ""
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Parent = container
+
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(1, 0)
+    toggleCorner.Parent = toggleBtn
+
+    -- Круг внутри тумблера
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 16, 0, 16)
+    indicator.Position = UDim2.new(0, 2, 0.5, -8)
+    indicator.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    indicator.BorderSizePixel = 0
+    indicator.Parent = toggleBtn
+
+    local indCorner = Instance.new("UICorner")
+    indCorner.CornerRadius = UDim.new(1, 0)
+    indCorner.Parent = indicator
+
+    -- Обновление состояния тумблера
+    local function updateState()
+        local active = settings[settingKey]
+        toggleBtn.BackgroundColor3 = active and Color3.fromRGB(100, 40, 180) or Color3.fromRGB(60, 60, 60)
+        indicator.Position = active and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        indicator.BackgroundColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
+    end
+
+    toggleBtn.MouseButton1Click:Connect(function()
+        settings[settingKey] = not settings[settingKey]
+        updateState()
+    end)
+    
+    updateState()
+    return container
 end
 
--- Variables
-local aim = false
-local esp = false
-local weaponEsp = false
-local noClip = false
-local autoKill = false
-local fovSize = 45
+-- ==============================================
+-- ДОБАВЛЕНИЕ ЭЛЕМЕНТОВ В МЕНЮ
+-- ==============================================
+createToggle(60, "ESP (Highlight)", "ESP")
+createToggle(100, "Weapon Highlight", "WeaponESP")
+createToggle(140, "NoClip (Walls)", "NoClip")
+createToggle(180, "Aimbot", "Aimbot")
+createToggle(220, "AutoKill", "AutoKill")
 
-local highlights = {}
-local weaponHighlights = {}
-local green = Color3.new(0, 1, 0.2)
-local red = Color3.new(1, 0.15, 0.15)
-local blue = Color3.new(0.2, 0.4, 1)
+-- Ползунок FOV
+local fovLabel = Instance.new("TextLabel")
+fovLabel.Size = UDim2.new(0, 100, 0, 20)
+fovLabel.Position = UDim2.new(0, 10, 0, 260)
+fovLabel.BackgroundTransparency = 1
+fovLabel.Text = "FOV: " .. settings.FOV
+fovLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+fovLabel.Font = Enum.Font.SourceSans
+fovLabel.TextSize = 14
+fovLabel.TextXAlignment = Enum.TextXAlignment.Left
+fovLabel.Parent = menuFrame
 
--- ROLE DETECTION
+local fovSlider = Instance.new("TextBox")
+fovSlider.Size = UDim2.new(0, 50, 0, 25)
+fovSlider.Position = UDim2.new(1, -60, 0, 258)
+fovSlider.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+fovSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+fovSlider.Text = tostring(settings.FOV)
+fovSlider.Font = Enum.Font.SourceSansBold
+fovSlider.TextSize = 14
+fovSlider.BorderSizePixel = 0
+fovSlider.Parent = menuFrame
+
+local sliderCorner = Instance.new("UICorner")
+sliderCorner.CornerRadius = UDim.new(0, 6)
+sliderCorner.Parent = fovSlider
+
+fovSlider.FocusLost:Connect(function()
+    local val = tonumber(fovSlider.Text)
+    if val and val > 0 then
+        settings.FOV = math.clamp(val, 10, 300)
+        fovLabel.Text = "FOV: " .. settings.FOV
+        fovSlider.Text = tostring(settings.FOV)
+    else
+        fovSlider.Text = tostring(settings.FOV)
+    end
+end)
+
+-- ==============================================
+-- ФУНКЦИОНАЛ ИГРЫ
+-- ==============================================
+
+-- Функция получения роли игрока
 local function getRole(player)
     if not player or not player.Character then return "Innocent" end
     
-    local name = player.Name:lower()
-    if name:find("murderer") or name:find("мардер") or name:find("kill") then
-        return "Murderer"
-    elseif name:find("sheriff") or name:find("шериф") or name:find("detective") then
-        return "Sheriff"
-    end
+    local char = player.Character
     
-    if player:FindFirstChild("Role") then
-        return player.Role.Value
-    end
-    
-    for _, child in ipairs(ws:GetChildren()) do
-        if child.Name == player.Name and child:FindFirstChild("Role") then
-            return child.Role.Value
-        end
-    end
-    
-    if player.Character then
-        local tool = player.Character:FindFirstChildOfClass("Tool")
-        if tool then
-            local toolName = tool.Name:lower()
-            if toolName:find("knife") or toolName:find("blade") or toolName:find("dagger") then
-                return "Murderer"
-            elseif toolName:find("gun") or toolName:find("pistol") or toolName:find("shoot") then
-                return "Sheriff"
-            end
+    -- Простейшая проверка на оружие (для MM2)
+    local tool = char:FindFirstChildOfClass("Tool")
+    if tool then
+        local name = tool.Name:lower()
+        if name:find("knife") or name:find("blade") or name:find("dagger") or name:find("sword") then
+            return "Murderer"
+        elseif name:find("gun") or name:find("pistol") or name:find("revolver") or name:find("shoot") then
+            return "Sheriff"
         end
     end
     
     return "Innocent"
 end
 
+-- Проверка, является ли игрок врагом
 local function isEnemy(player)
     if player == plr then return false end
     local myRole = getRole(plr)
@@ -144,226 +287,32 @@ local function isEnemy(player)
     
     if myRole == "Murderer" then
         return theirRole ~= "Murderer"
-    end
-    
-    if myRole == "Sheriff" then
+    elseif myRole == "Sheriff" then
         return theirRole == "Murderer"
     end
-    
-    return theirRole == "Murderer"
+    return false
 end
 
-local function getRoleColor(player)
-    local role = getRole(player)
-    if role == "Murderer" then
-        return red
-    elseif role == "Sheriff" then
-        return blue
-    else
-        return green
-    end
-end
-
--- Toggle Buttons
-local function makeToggle(name, y, def, callback)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 170, 0, 24)
-    b.Position = UDim2.new(0, 10, 0, y)
-    b.BackgroundColor3 = def and Color3.new(0.3, 0.05, 0.05) or Color3.new(0.12, 0.12, 0.12)
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.Text = name .. " " .. (def and "ON" or "OFF")
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 13
-    b.BorderSizePixel = 0
-    b.Parent = menu
-
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 6)
-    c.Parent = b
-
-    b.MouseButton1Click:Connect(function()
-        def = not def
-        b.BackgroundColor3 = def and Color3.new(0.3, 0.05, 0.05) or Color3.new(0.12, 0.12, 0.12)
-        b.Text = name .. " " .. (def and "ON" or "OFF")
-        if callback then callback(def) end
-    end)
-    return b
-end
-
--- Menu Items
-addSeparator(2, "── AIM ──")
-makeToggle("Aimbot", 18, aim, function(v) aim = v end)
-
-addSeparator(48, "── VISUAL ──")
-makeToggle("ESP", 64, esp, function(v) esp = v end)
-makeToggle("Weapon ESP", 92, weaponEsp, function(v) weaponEsp = v end)
-
-addSeparator(122, "── KILL ──")
-makeToggle("AutoKill", 138, autoKill, function(v) autoKill = v end)
-
-addSeparator(168, "── MOVE ──")
-makeToggle("NoClip", 184, noClip, function(v) noClip = v end)
-
--- FOV Size
-local fovLabel = Instance.new("TextLabel")
-fovLabel.Size = UDim2.new(0, 70, 0, 16)
-fovLabel.Position = UDim2.new(0, 10, 0, 220)
-fovLabel.Text = "FOV " .. math.floor(fovSize)
-fovLabel.TextColor3 = Color3.new(1, 0.3, 0.3)
-fovLabel.BackgroundTransparency = 1
-fovLabel.Font = Enum.Font.SourceSansBold
-fovLabel.TextSize = 12
-fovLabel.Parent = menu
-
-local fovBox = Instance.new("TextBox")
-fovBox.Size = UDim2.new(0, 50, 0, 20)
-fovBox.Position = UDim2.new(0, 120, 0, 218)
-fovBox.Text = tostring(math.floor(fovSize))
-fovBox.BackgroundColor3 = Color3.new(0.15, 0.05, 0.05)
-fovBox.TextColor3 = Color3.new(1, 1, 1)
-fovBox.Font = Enum.Font.SourceSansBold
-fovBox.TextSize = 13
-fovBox.ClearTextOnFocus = false
-fovBox.Parent = menu
-
-local fovCorner = Instance.new("UICorner")
-fovCorner.CornerRadius = UDim.new(0, 5)
-fovCorner.Parent = fovBox
-
-fovBox.FocusLost:Connect(function()
-    local v = tonumber(fovBox.Text)
-    if v then
-        fovSize = math.clamp(v, 10, 250)
-        fovLabel.Text = "FOV " .. math.floor(fovSize)
-        fovBox.Text = tostring(math.floor(fovSize))
-    else
-        fovBox.Text = tostring(math.floor(fovSize))
-    end
-end)
-
--- Dragging
-local dragging = false
-local dragStart, startPos
-
-btn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = btn.Position
-        uis.MouseIconEnabled = false
-    end
-end)
-
-btn.InputEnded:Connect(function(input)
-    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and dragging then
-        dragging = false
-        uis.MouseIconEnabled = true
-    end
-end)
-
-uis.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        btn.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
-        if menu.Visible then
-            local absX = btn.AbsolutePosition.X
-            local screenW = cam.ViewportSize.X
-            local menuW = menu.AbsoluteSize.X
-            if absX < screenW / 2 then
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 42, 0, btn.AbsolutePosition.Y)
-            else
-                menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 6, 0, btn.AbsolutePosition.Y)
-            end
-        end
-    end
-end)
-
-local function toggleMenu()
-    menu.Visible = not menu.Visible
-    if menu.Visible then
-        local absX = btn.AbsolutePosition.X
-        local screenW = cam.ViewportSize.X
-        local menuW = menu.AbsoluteSize.X
-        if absX < screenW / 2 then
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X + 42, 0, btn.AbsolutePosition.Y)
-        else
-            menu.Position = UDim2.new(0, btn.AbsolutePosition.X - menuW - 6, 0, btn.AbsolutePosition.Y)
-        end
-    end
-end
-
-btn.MouseButton1Click:Connect(toggleMenu)
-uis.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.D or input.KeyCode == Enum.KeyCode.B then toggleMenu() end
-end)
-
--- NoClip
-local function setNoClip(enabled)
+-- Функция NoClip (Прохождение сквозь стены)
+local function updateNoclip()
     if not plr.Character then return end
+    local state = settings.NoClip
     for _, part in ipairs(plr.Character:GetDescendants()) do
         if part:IsA("BasePart") then
-            part.CanCollide = not enabled
+            part.CanCollide = not state
         end
     end
 end
 
--- Weapon ESP
-local function updateWeaponESP()
-    for _, h in pairs(weaponHighlights) do
-        if h then h:Destroy() end
-    end
-    weaponHighlights = {}
-    
-    if not weaponEsp then return end
-    
-    for _, item in ipairs(ws:GetDescendants()) do
-        if item:IsA("Tool") and item.Parent ~= plr.Character then
-            local handle = item:FindFirstChild("Handle")
-            if handle then
-                local h = Instance.new("Highlight")
-                h.FillColor = Color3.new(1, 0.8, 0)
-                h.FillTransparency = 0.3
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.OutlineTransparency = 0.2
-                h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                h.Parent = handle
-                table.insert(weaponHighlights, h)
-            end
-        end
-    end
-    
-    for _, player in ipairs(players:GetPlayers()) do
-        if player ~= plr and player.Character then
-            local tool = player.Character:FindFirstChildOfClass("Tool")
-            if tool then
-                local handle = tool:FindFirstChild("Handle")
-                if handle then
-                    local h = Instance.new("Highlight")
-                    h.FillColor = Color3.new(1, 0.8, 0)
-                    h.FillTransparency = 0.3
-                    h.OutlineColor = Color3.new(1, 1, 1)
-                    h.OutlineTransparency = 0.2
-                    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                    h.Parent = handle
-                    table.insert(weaponHighlights, h)
-                end
-            end
-        end
-    end
-end
-
--- AutoKill (only for Murderer)
-local function autoKillAll()
-    if getRole(plr) ~= "Murderer" then 
-        return 
-    end
-    
+-- Функция AutoKill (Убийство всех врагов разом для Убийцы)
+local function runAutoKill()
+    if not settings.AutoKill then return end
+    if getRole(plr) ~= "Murderer" then return end
     if not plr.Character then return end
+    
     local tool = plr.Character:FindFirstChildOfClass("Tool")
-    if not tool then return end
+    if not tool then return end -- Нет ножа, не можем бить
+    
     local mouse = plr:GetMouse()
     if not mouse then return end
     
@@ -372,110 +321,153 @@ local function autoKillAll()
             local head = p.Character:FindFirstChild("Head")
             if head then
                 local oldHit = mouse.Hit
-                mouse.Hit = CFrame.new(head.Position)
+                mouse.Hit = CFrame.new(head.Position + Vector3.new(0, 1, 0))
                 mouse.Button1Down:Fire()
+                task.wait(0.05)
                 mouse.Button1Up:Fire()
                 mouse.Hit = oldHit
-                task.wait(0.05)
+                task.wait(0.1)
             end
         end
     end
 end
 
--- Main Loop
-rs.RenderStepped:Connect(function()
-    setNoClip(noClip)
+-- Функция Aimbot
+local function runAimbot()
+    if not settings.Aimbot then return end
+    if not plr.Character then return end
     
-    -- ESP
-    if esp then
-        for _, p in ipairs(players:GetPlayers()) do
-            if p ~= plr and p.Character then
-                if not highlights[p] then
-                    local h = Instance.new("Highlight")
-                    h.FillColor = getRoleColor(p)
-                    h.FillTransparency = 0.4
-                    h.OutlineColor = Color3.new(1, 1, 1)
-                    h.OutlineTransparency = 0.15
-                    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                    h.Parent = p.Character
-                    highlights[p] = h
-                    p.CharacterAdded:Connect(function()
-                        if highlights[p] then
-                            highlights[p]:Destroy()
-                            highlights[p] = nil
-                        end
-                    end)
-                else
-                    highlights[p].FillColor = getRoleColor(p)
-                end
-            end
-        end
-        for p, h in pairs(highlights) do
-            if not p or not p.Character or not h.Parent then
-                if h then h:Destroy() end
-                highlights[p] = nil
-            end
-        end
-    else
-        for _, h in pairs(highlights) do
-            if h then h:Destroy() end
-        end
-        highlights = {}
-    end
+    -- Проверяем, есть ли у нас оружие
+    local myRole = getRole(plr)
+    if myRole == "Innocent" then return end -- Иннокент не может стрелять/бить
+
+    local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+    local bestTarget = nil
+    local bestDist = math.huge
     
-    -- Weapon ESP
-    if weaponEsp then
-        updateWeaponESP()
-    else
-        for _, h in pairs(weaponHighlights) do
-            if h then h:Destroy() end
-        end
-        weaponHighlights = {}
-    end
-    
-    -- AutoKill
-    if autoKill then
-        autoKillAll()
-    end
-    
-    -- Aimbot
-    if aim and plr.Character then
-        local camPos = cam.CFrame.Position
-        local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-        local best = nil
-        local bestDist = math.huge
-        
-        for _, p in ipairs(players:GetPlayers()) do
-            if p ~= plr and isEnemy(p) and p.Character then
-                local head = p.Character:FindFirstChild("Head")
-                if head then
-                    local scr, onScreen = cam:WorldToViewportPoint(head.Position)
-                    if onScreen and scr.Z > 0 then
-                        local dist2d = (Vector2.new(scr.X, scr.Y) - center).Magnitude
-                        if dist2d <= fovSize then
-                            if dist2d < bestDist then
-                                bestDist = dist2d
-                                best = head.Position
-                            end
-                        end
+    for _, p in ipairs(players:GetPlayers()) do
+        if p ~= plr and isEnemy(p) and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            if head then
+                local scrPoint, onScreen = cam:WorldToViewportPoint(head.Position)
+                if onScreen and scrPoint.Z > 0 then
+                    local dist = (Vector2.new(scrPoint.X, scrPoint.Y) - center).Magnitude
+                    if dist <= settings.FOV and dist < bestDist then
+                        bestDist = dist
+                        bestTarget = head
                     end
                 end
             end
         end
-        
-        if best then
-            cam.CFrame = CFrame.lookAt(camPos, best)
+    end
+    
+    if bestTarget then
+        cam.CFrame = CFrame.lookAt(cam.CFrame.Position, bestTarget.Position)
+    end
+end
+
+-- Функция Обновления ESP
+local function updateESP()
+    if not settings.ESP then
+        -- Очищаем хайлайты если ESP выключен
+        for _, h in pairs(highlights) do if h then h:Destroy() end end
+        highlights = {}
+        return
+    end
+    
+    for _, p in ipairs(players:GetPlayers()) do
+        if p ~= plr and p.Character then
+            if not highlights[p] then
+                local h = Instance.new("Highlight")
+                h.FillColor = roleColors[getRole(p)] or roleColors.Innocent
+                h.FillTransparency = 0.3
+                h.OutlineColor = Color3.fromRGB(255, 255, 255)
+                h.OutlineTransparency = 0.1
+                h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                h.Parent = p.Character
+                highlights[p] = h
+                
+                -- Очистка при респавне
+                p.CharacterAdded:Connect(function()
+                    if highlights[p] then
+                        highlights[p]:Destroy()
+                        highlights[p] = nil
+                    end
+                end)
+            else
+                -- Обновляем цвет если роль сменилась
+                highlights[p].FillColor = roleColors[getRole(p)] or roleColors.Innocent
+            end
         end
     end
     
-    -- FOV Circle
-    local circleSize = fovSize * 2
-    fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
-    fovCircle.Visible = aim
+    -- Очистка мертвых игроков из списка
+    for p, h in pairs(highlights) do
+        if not p or not p.Character or not h.Parent then
+            if h then h:Destroy() end
+            highlights[p] = nil
+        end
+    end
+end
+
+-- Функция Weapon ESP
+local function updateWeaponESP()
+    if not settings.WeaponESP then
+        for _, h in pairs(weaponHighlights) do if h then h:Destroy() end end
+        weaponHighlights = {}
+        return
+    end
+    
+    -- Ищем оружие на земле
+    for _, item in ipairs(ws:GetDescendants()) do
+        if item:IsA("Tool") and item.Parent ~= plr.Character then
+            local handle = item:FindFirstChild("Handle")
+            if handle and not handle:FindFirstChild("SW_WeaponHighlight") then
+                local h = Instance.new("Highlight")
+                h.Name = "SW_WeaponHighlight"
+                h.FillColor = Color3.fromRGB(255, 215, 0)
+                h.FillTransparency = 0.2
+                h.OutlineColor = Color3.fromRGB(255, 255, 255)
+                h.OutlineTransparency = 0.1
+                h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                h.Parent = handle
+                table.insert(weaponHighlights, h)
+            end
+        end
+    end
+end
+
+-- ==============================================
+-- ГЛАВНЫЙ ЦИКЛ (RenderStepped)
+-- ==============================================
+rs.RenderStepped:Connect(function()
+    -- Запускаем функции в правильном порядке
+    updateESP()
+    updateWeaponESP()
+    updateNoclip()
+    runAimbot()
+    runAutoKill()
 end)
 
-print("SWILL MM2 FULL loaded!")
-print("ESP: Green = Innocent, Red = Murderer, Blue = Sheriff")
-print("Weapon ESP: Golden weapons")
-print("AutoKill: ONLY for Murderer")
-print("Menu: B or D")
+-- ==============================================
+-- УПРАВЛЕНИЕ МЕНЮ (Кнопки открытия/закрытия)
+-- ==============================================
+local function toggleMenu()
+    menuFrame.Visible = not menuFrame.Visible
+end
+
+openBtn.MouseButton1Click:Connect(toggleMenu)
+closeBtn.MouseButton1Click:Connect(toggleMenu)
+
+uis.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.B or input.KeyCode == Enum.KeyCode.D then
+        toggleMenu()
+    end
+end)
+
+-- ==============================================
+-- ЗАВЕРШЕНИЕ
+-- ==============================================
+print("=== SWILL MM2 ULTRA MENU LOADED ===")
+print("Press B or D to open/close menu.")
+print("Fully optimized for Roblox MM2.")
