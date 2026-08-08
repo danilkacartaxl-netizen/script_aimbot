@@ -1,6 +1,7 @@
 -- ==============================================
--- WINSTIK MVsD v3.1 (ИСПРАВЛЕННЫЙ)
+-- WINSTIK MVsD v3.2 (БЕЗ КНОПКИ ЦВЕТА)
 -- 2D Boxes с очертаниями, Wallhack, Trails, Aimbot
+-- Цвет по умолчанию: Голубой
 -- ==============================================
 
 local player = game.Players.LocalPlayer
@@ -34,18 +35,9 @@ local settings = {
     MenuOpen = true
 }
 
--- Цвета
-local colorNames = {"Голубой", "Красный", "Зеленый", "Желтый", "Фиолетовый", "Оранжевый", "Розовый"}
-local colors = {
-    [1] = Color3.fromRGB(0, 150, 255),
-    [2] = Color3.fromRGB(255, 50, 50),
-    [3] = Color3.fromRGB(50, 255, 50),
-    [4] = Color3.fromRGB(255, 200, 0),
-    [5] = Color3.fromRGB(180, 50, 255),
-    [6] = Color3.fromRGB(255, 150, 50),
-    [7] = Color3.fromRGB(255, 50, 200)
-}
-local currentColorIndex = 1
+-- Цвет по умолчанию (Голубой)
+local ESP_COLOR = Color3.fromRGB(0, 150, 255)
+
 local espObjects = {}
 local trailObjects = {}
 
@@ -63,11 +55,11 @@ toggleBtn.Size = UDim2.new(0, 38, 0, 38)
 toggleBtn.Position = UDim2.new(0, 12, 0, 12)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
 toggleBtn.Text = "W"
-toggleBtn.TextColor3 = colors[currentColorIndex]
+toggleBtn.TextColor3 = ESP_COLOR
 toggleBtn.TextScaled = true
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.BorderSizePixel = 2
-toggleBtn.BorderColor3 = colors[currentColorIndex]
+toggleBtn.BorderColor3 = ESP_COLOR
 toggleBtn.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
@@ -76,12 +68,12 @@ toggleCorner.Parent = toggleBtn
 
 -- Главное окно
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 320)
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -160)
+mainFrame.Size = UDim2.new(0, 200, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -150)
 mainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
 mainFrame.BackgroundTransparency = 0.05
 mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = colors[currentColorIndex]
+mainFrame.BorderColor3 = ESP_COLOR
 mainFrame.ClipsDescendants = true
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -109,7 +101,7 @@ title.Size = UDim2.new(0.6, 0, 1, 0)
 title.Position = UDim2.new(0.05, 0, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "WINSTIK"
-title.TextColor3 = colors[currentColorIndex]
+title.TextColor3 = ESP_COLOR
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -120,7 +112,7 @@ local version = Instance.new("TextLabel")
 version.Size = UDim2.new(0.3, 0, 0.5, 0)
 version.Position = UDim2.new(0.7, 0, 0.5, 0)
 version.BackgroundTransparency = 1
-version.Text = "v3.1"
+version.Text = "v3.2"
 version.TextColor3 = Color3.fromRGB(80, 80, 80)
 version.Font = Enum.Font.Gotham
 version.TextSize = 11
@@ -133,7 +125,7 @@ closeBtn.Size = UDim2.new(0, 26, 0, 26)
 closeBtn.Position = UDim2.new(1, -32, 0.5, -13)
 closeBtn.BackgroundTransparency = 1
 closeBtn.Text = "✕"
-closeBtn.TextColor3 = colors[currentColorIndex]
+closeBtn.TextColor3 = ESP_COLOR
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 14
 closeBtn.Parent = topBar
@@ -148,7 +140,7 @@ end)
 local line = Instance.new("Frame")
 line.Size = UDim2.new(0.9, 0, 0, 1)
 line.Position = UDim2.new(0.05, 0, 0, 40)
-line.BackgroundColor3 = colors[currentColorIndex]
+line.BackgroundColor3 = ESP_COLOR
 line.BorderSizePixel = 0
 line.Parent = mainFrame
 
@@ -158,8 +150,8 @@ scrollFrame.Size = UDim2.new(1, 0, 1, -40)
 scrollFrame.Position = UDim2.new(0, 0, 0, 40)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.ScrollBarThickness = 2
-scrollFrame.ScrollBarImageColor3 = colors[currentColorIndex]
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 420)
+scrollFrame.ScrollBarImageColor3 = ESP_COLOR
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 380)
 scrollFrame.Parent = mainFrame
 
 -- ==========================================
@@ -191,7 +183,7 @@ local function createToggle(text, yPos, settingKey)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 36, 0, 18)
     btn.Position = UDim2.new(1, -38, 0.5, -9)
-    btn.BackgroundColor3 = settings[settingKey] and colors[currentColorIndex] or Color3.fromRGB(50, 50, 50)
+    btn.BackgroundColor3 = settings[settingKey] and ESP_COLOR or Color3.fromRGB(50, 50, 50)
     btn.Text = ""
     btn.BorderSizePixel = 0
     btn.Parent = frame
@@ -214,7 +206,7 @@ local function createToggle(text, yPos, settingKey)
     btn.MouseButton1Click:Connect(function()
         settings[settingKey] = not settings[settingKey]
         if settings[settingKey] then
-            btn.BackgroundColor3 = colors[currentColorIndex]
+            btn.BackgroundColor3 = ESP_COLOR
             indicator.Position = UDim2.new(1, -16, 0.5, -7)
             indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         else
@@ -310,7 +302,7 @@ local function createSlider(text, yPos, minVal, maxVal, settingKey, formatFunc)
     valueLabel.Position = UDim2.new(0.65, 0, 0.05, 0)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = formatFunc(settings[settingKey])
-    valueLabel.TextColor3 = colors[currentColorIndex]
+    valueLabel.TextColor3 = ESP_COLOR
     valueLabel.Font = Enum.Font.GothamBold
     valueLabel.TextSize = 10
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -325,14 +317,14 @@ local function createSlider(text, yPos, minVal, maxVal, settingKey, formatFunc)
 
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new((settings[settingKey] - minVal) / (maxVal - minVal), 0, 1, 0)
-    fill.BackgroundColor3 = colors[currentColorIndex]
+    fill.BackgroundColor3 = ESP_COLOR
     fill.BorderSizePixel = 0
     fill.Parent = sliderBg
 
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 10, 0, 10)
     knob.Position = UDim2.new((settings[settingKey] - minVal) / (maxVal - minVal), -5, 0.5, -5)
-    knob.BackgroundColor3 = colors[currentColorIndex]
+    knob.BackgroundColor3 = ESP_COLOR
     knob.BorderSizePixel = 0
     knob.Parent = sliderBg
     
@@ -377,130 +369,40 @@ end
 -- ЗАПОЛНЕНИЕ МЕНЮ
 -- ==========================================
 local y = 5
-local toggleButtons = {}
 
-local function addToggle(text, key)
-    local btn = createToggle(text, y, key)
-    toggleButtons[key] = btn
-    y = y + 32
-end
-
-addToggle("AIMBOT", "Aimbot")
-addToggle("ESP", "ESP")
-addToggle("WALLHACK", "Wallhack")
-addToggle("SPIN 360", "Spin360")
-addToggle("FOG", "Fog")
-
-y = y + 4
-local partBtn = createChoice("AIM PART", y, {"Head", "Torso"}, "AimPart")
+createToggle("AIMBOT", y, "Aimbot")
 y = y + 32
 
-local skeletonBtn = createChoice("SKELETON", y, {"ON", "OFF"}, "ShowSkeleton")
+createToggle("ESP", y, "ESP")
+y = y + 32
+
+createToggle("WALLHACK", y, "Wallhack")
+y = y + 32
+
+createToggle("SPIN 360", y, "Spin360")
+y = y + 32
+
+createToggle("FOG", y, "Fog")
+y = y + 36
+
+createChoice("AIM PART", y, {"Head", "Torso"}, "AimPart")
+y = y + 32
+
+createChoice("SKELETON", y, {"ON", "OFF"}, "ShowSkeleton")
 y = y + 36
 
 createSlider("FOV", y, 50, 500, "FOV", function(v) return tostring(math.floor(v)) end)
 y = y + 42
+
 createSlider("SMOOTH", y, 0.05, 0.5, "Smooth", function(v) return string.format("%.2f", v) end)
 y = y + 42
+
 createSlider("SPIN SPEED", y, 1, 20, "SpinSpeed", function(v) return tostring(math.floor(v)) end)
 y = y + 42
+
 createSlider("FOG DENSITY", y, 0, 2, "FogDensity", function(v) return string.format("%.1f", v) end)
-y = y + 46
 
--- ==========================================
--- КНОПКА СМЕНЫ ЦВЕТА (ИСПРАВЛЕННАЯ)
--- ==========================================
-local colorFrame = Instance.new("Frame")
-colorFrame.Size = UDim2.new(0.9, 0, 0, 28)
-colorFrame.Position = UDim2.new(0.05, 0, 0, y)
-colorFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
-colorFrame.BorderSizePixel = 0
-colorFrame.Parent = scrollFrame
-
-local colorCorner = Instance.new("UICorner")
-colorCorner.CornerRadius = UDim.new(0, 6)
-colorCorner.Parent = colorFrame
-
-local colorLabel = Instance.new("TextLabel")
-colorLabel.Size = UDim2.new(0.5, 0, 1, 0)
-colorLabel.Position = UDim2.new(0.05, 0, 0, 0)
-colorLabel.BackgroundTransparency = 1
-colorLabel.Text = "ESP COLOR"
-colorLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-colorLabel.Font = Enum.Font.Gotham
-colorLabel.TextSize = 11
-colorLabel.TextXAlignment = Enum.TextXAlignment.Left
-colorLabel.Parent = colorFrame
-
-local colorBtn = Instance.new("TextButton")
-colorBtn.Size = UDim2.new(0, 60, 0, 20)
-colorBtn.Position = UDim2.new(0.7, 0, 0.5, -10)
-colorBtn.BackgroundColor3 = colors[currentColorIndex]
-colorBtn.Text = colorNames[currentColorIndex]
-colorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-colorBtn.Font = Enum.Font.GothamBold
-colorBtn.TextSize = 10
-colorBtn.BorderSizePixel = 0
-colorBtn.Parent = colorFrame
-
-local colorBtnCorner = Instance.new("UICorner")
-colorBtnCorner.CornerRadius = UDim.new(0, 4)
-colorBtnCorner.Parent = colorBtn
-
--- ФУНКЦИЯ ОБНОВЛЕНИЯ ЦВЕТА
-local function updateAllColors(newColor)
-    -- Обновляем меню
-    mainFrame.BorderColor3 = newColor
-    line.BackgroundColor3 = newColor
-    title.TextColor3 = newColor
-    closeBtn.TextColor3 = newColor
-    toggleBtn.TextColor3 = newColor
-    toggleBtn.BorderColor3 = newColor
-    scrollFrame.ScrollBarImageColor3 = newColor
-    colorBtn.BackgroundColor3 = newColor
-    
-    -- Обновляем все тогглы
-    for key, btn in pairs(toggleButtons) do
-        if settings[key] then
-            btn.BackgroundColor3 = newColor
-        end
-    end
-    
-    -- Обновляем ESP
-    for plr, data in pairs(espObjects) do
-        if plr.Character and data.Folder then
-            for _, child in ipairs(data.Folder:GetChildren()) do
-                if child:IsA("Adornment") and child.Color3 ~= Color3.fromRGB(0, 0, 0) then
-                    child.Color3 = newColor
-                end
-            end
-        end
-    end
-    
-    -- Обновляем ползунки
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            for _, sub in ipairs(child:GetChildren()) do
-                if sub:IsA("TextLabel") and sub.TextColor3 == colors[currentColorIndex] then
-                    sub.TextColor3 = newColor
-                end
-                if sub:IsA("Frame") and sub.BackgroundColor3 == colors[currentColorIndex] then
-                    sub.BackgroundColor3 = newColor
-                end
-            end
-        end
-    end
-end
-
-colorBtn.MouseButton1Click:Connect(function()
-    currentColorIndex = currentColorIndex % #colorNames + 1
-    local newColor = colors[currentColorIndex]
-    colorBtn.Text = colorNames[currentColorIndex]
-    updateAllColors(newColor)
-end)
-
-y = y + 35
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, y + 20)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, y + 50)
 
 -- ==========================================
 -- УПРАВЛЕНИЕ МЕНЮ
@@ -583,7 +485,7 @@ circleUI.CornerRadius = UDim.new(1, 0)
 circleUI.Parent = fovCircle
 
 local circleStroke = Instance.new("UIStroke")
-circleStroke.Color = colors[currentColorIndex]
+circleStroke.Color = ESP_COLOR
 circleStroke.Thickness = 2
 circleStroke.LineJoinMode = Enum.LineJoinMode.Round
 circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -634,7 +536,7 @@ runService.RenderStepped:Connect(function()
     local circleSize = settings.FOV * 2
     fovCircle.Size = UDim2.new(0, circleSize, 0, circleSize)
     fovCircle.Visible = settings.Aimbot
-    circleStroke.Color = colors[currentColorIndex]
+    circleStroke.Color = ESP_COLOR
 end)
 
 -- ==========================================
@@ -684,7 +586,7 @@ local function createESP(plr)
         local box = Instance.new("BoxHandleAdornment")
         box.Size = Vector3.new(3.2, 5.2, 1.2)
         box.Adornee = char
-        box.Color3 = colors[currentColorIndex]
+        box.Color3 = ESP_COLOR
         box.Transparency = 0.15
         box.AlwaysOnTop = settings.Wallhack
         box.Parent = folder
@@ -706,7 +608,7 @@ local function createESP(plr)
             line.Adornee = char
             line.Point1 = p1.Position
             line.Point2 = p2.Position
-            line.Color3 = colors[currentColorIndex]
+            line.Color3 = ESP_COLOR
             line.Thickness = 1.5
             line.Transparency = 0.3
             line.AlwaysOnTop = settings.Wallhack
@@ -732,7 +634,7 @@ local function createESP(plr)
         trail.Adornee = char
         trail.Point1 = camera.CFrame.Position
         trail.Point2 = char:FindFirstChild("Head") and char.Head.Position or char.PrimaryPart.Position
-        trail.Color3 = colors[currentColorIndex]
+        trail.Color3 = ESP_COLOR
         trail.Thickness = 1.5
         trail.Transparency = 0.3
         trail.AlwaysOnTop = settings.Wallhack
@@ -826,5 +728,5 @@ runService.RenderStepped:Connect(function()
     end
 end)
 
-print("WINSTIK MVsD v3.1 LOADED!")
+print("WINSTIK MVsD v3.2 LOADED!")
 print("Нажми B или D для открытия меню")
